@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Database & Cetak KTA HMI Mimika</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+body{font-family:system-ui;background:#f1f5f9}
+.hidden{display:none}
+@media print{
+  body{background:white}
+  .no-print{display:none}
+}
+</style>
+</head>
+
+<body class="p-4">
+
+<!-- LOGIN -->
+<div id="loginBox" class="max-w-md mx-auto bg-white p-6 rounded-xl shadow">
+  <h2 class="text-2xl font-bold mb-4 text-center">Login Database HMI Mimika</h2>
+  <input id="user" placeholder="Username" class="border p-2 w-full mb-3 rounded">
+  <input id="pass" type="password" placeholder="Password" class="border p-2 w-full mb-4 rounded">
+  <button onclick="login()" class="bg-green-700 text-white w-full py-2 rounded">Masuk</button>
+  <p id="loginErr" class="text-red-600 mt-2 hidden text-center">Login salah</p>
+</div>
+
+<!-- APP -->
+<div id="app" class="hidden">
+
+<header class="bg-gradient-to-r from-green-800 to-yellow-500 text-white text-center p-5 rounded-3xl shadow mb-6">
+  <h1 class="text-3xl font-bold">DATABASE HMI MIMIKA</h1>
+  <p id="roleText" class="mt-1 text-sm"></p>
+</header>
+
+<div class="flex gap-3 mb-6 justify-center no-print">
+  <button onclick="showTab('data')" class="btn">📋 Data</button>
+  <button onclick="showTab('cetak')" class="btn">🖨️ Cetak KTA</button>
+</div>
+
+<!-- DATA -->
+<div id="data" class="tabPage bg-white p-5 rounded-xl shadow">
+
+  <div class="flex justify-between mb-3 no-print">
+    <input id="search" oninput="render()" placeholder="Cari nama / NIK" class="border p-2 rounded w-1/2">
+    <button onclick="downloadCSV()" class="bg-blue-600 text-white px-4 rounded">Download CSV</button>
+  </div>
+
+  <div class="overflow-auto">
+    <table class="w-full text-sm border">
+      <thead class="bg-amber-700 text-white">
+        <tr>
+          <th class="p-2 border">Foto</th>
+          <th class="p-2 border">Nama</th>
+          <th class="p-2 border">NIK</th>
+          <th class="p-2 border">Komisariat</th>
+          <th class="p-2 border">Status</th>
+          <th class="p-2 border">QR</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- CETAK -->
+<div id="cetak" class="tabPage hidden">
+
+<div class="no-print text-center mb-4">
+  <button onclick="window.print()" class="bg-green-700 text-white px-6 py-2 rounded">🖨️ PRINT A4</button>
+</div>
+
+<div id="printArea" class="grid grid-cols-2 gap-4">
+
+</div>
+
+</div>
+
+<footer class="text-center mt-8 text-gray-500 no-print">IT Nesacip 2025</footer>
+
+</div>
+
+<script>
+// ===== USER =====
+const USERS={
+ ekonomi:{pass:"12345",kom:"Komisariat Ekonomi"},
+ insan:{pass:"12345",kom:"Komisariat Insan Cita"},
+ lafran:{pass:"12345",kom:"Komisariat Lafran Pane"},
+ cabang:{pass:"12345",kom:"ALL"}
+};
+
+let role=""; let rows=[];
+
+// ===== SHEET =====
+const sheetURL="https://docs.google.com/spreadsheets/d/e/2PACX-1vSaGF4w9j1HOTUJcpdBltUZ4N2hkZIqUpD6tJ4OkKkuHaYkWObiKnloTYC0rK1at5UYA16GmPUm7BNa/pub?gid=0&single=true&output=csv";
+
+// ===== LOGIN =====
+function login(){
+ let u=user.value.trim(); let p=pass.value;
+ if(USERS[u] && USERS[u].pass===p){
+   role=USERS[u].kom;
+   loginBox.classList.add("hidden");
+   app.classList.remove("hidden");
+   roleText.innerText="Akses: "+role;
+   loadData();
+ } else loginErr.classList.remove("hidden");
+}
+
+// ===== LOAD =====
+async function loadData(){
+ let t=await fetch(sheetURL).then(r=>r.text());
+ let arr=t.split("\n").map(r=>r.split(","));
+ arr.shift(); // header
+ rows=arr;
+ render();
+ renderPrint();
+}
+
+// ===== FILTER =====
+function filterRows(){
+ let f=search.value.toLowerCase();
+ return rows.filter(r=>{
+   let komis=r[13];
+   if(role!=="ALL" && komis!==role) return false;
+   return r.join(" ").toLowerCase().includes(f);
+ });
+}
+
+// ===== RENDER TABLE =====
+function render(){
+ let d=filterRows();
+ tbody.innerHTML=d.map(r=>{
+   let id=r[0]; // SUBMISSION ID
+   let qr=`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${id}`;
+   return `<tr>
+     <td class="border p-1"><img src="${r[14]}" class="w-12 h-12 object-cover rounded"></td>
+     <td class="border p-1">${r[4]}</td>
+     <td class="border p-1">${r[3]}</td>
+     <td class="border p-1">${r[13]}</td>
+     <td class="border p-1">${r[10]}</td>
+     <td class="border p-1"><img src="${qr}"></td>
+   </tr>`;
+ }).join("");
+}
+
+// ===== CETAK KTA =====
+function renderPrint(){
+ let d=filterRows();
+ printArea.innerHTML=d.map(r=>{
+   let id=r[0];
+   let qr=`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${id}`;
+   return `
+<div class="border rounded-xl p-3 flex gap-3 items-center bg-white" style="height:220px">
+  <img src="${r[14]}" class="w-20 h-24 object-cover rounded">
+  <div class="flex-1 text-xs">
+    <b>${r[4]}</b><br>
+    NIK: ${r[3]}<br>
+    ${r[13]}<br>
+    Status: ${r[10]}
+  </div>
+  <div class="text-center">
+    <img src="${qr}" class="w-20 mx-auto">
+    <div class="text-[9px]">${id}</div>
+  </div>
+</div>`;
+ }).join("");
+}
+
+// ===== TAB =====
+function showTab(id){
+ document.querySelectorAll(".tabPage").forEach(x=>x.classList.add("hidden"));
+ document.getElementById(id).classList.remove("hidden");
+}
+
+// ===== DOWNLOAD =====
+function downloadCSV(){
+ let d=filterRows();
+ let csv=d.map(r=>r.join(",")).join("\n");
+ let blob=new Blob([csv],{type:"text/csv"});
+ let a=document.createElement("a");
+ a.href=URL.createObjectURL(blob);
+ a.download="HMI_MIMIKA.csv";
+ a.click();
+}
+</script>
+</body>
+</html>
