@@ -12,10 +12,9 @@
 <style>
 body { font-family: system-ui; background: #f1f5f9; }
 .hidden { display: none; }
-@media print {
-  body { background: white; }
-  .no-print { display: none; }
-}
+.no-print { display: block; }
+@media print { .no-print { display: none; } body { background: white; } }
+
 .kta-card {
   display: flex;
   background: white;
@@ -23,8 +22,8 @@ body { font-family: system-ui; background: #f1f5f9; }
   box-shadow: 0 4px 10px rgba(0,0,0,0.15);
   overflow: hidden;
   height: 180px;
-  position: relative;
   font-size: 14px;
+  position: relative;
 }
 .kta-left, .kta-right {
   width: 8px;
@@ -51,6 +50,8 @@ body { font-family: system-ui; background: #f1f5f9; }
 .kta-qr { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
 .kta-qr img { width: 64px; height: 64px; border: 2px solid #0f3d1e; border-radius: 8px; }
 .timestamp { font-size: 10px; color: #888; margin-top: 2px; text-align: center; }
+
+.tabPage { display: none; }
 </style>
 </head>
 <body class="p-4">
@@ -72,49 +73,33 @@ body { font-family: system-ui; background: #f1f5f9; }
   <p id="roleText" class="mt-1 text-sm"></p>
 </header>
 
-<div class="flex gap-3 mb-6 justify-center no-print">
-  <button onclick="showTab('data')" class="btn bg-gray-200 px-3 py-1 rounded">📋 Data</button>
-  <button onclick="showTab('cetak')" class="btn bg-gray-200 px-3 py-1 rounded">🖨️ Cetak KTA</button>
+<!-- Tally Form Embed -->
+<div class="mb-6 no-print">
+  <iframe src="https://tally.so/embed/Xx4Kxj?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1"
+          width="100%" height="500" frameborder="0" marginheight="0" marginwidth="0" title="Form Input Anggota"></iframe>
 </div>
 
-<!-- DATA -->
-<div id="data" class="tabPage bg-white p-5 rounded-xl shadow">
-  <div class="flex justify-between mb-3 no-print">
-    <input id="search" oninput="render()" placeholder="Cari nama / NIK" class="border p-2 rounded w-1/2">
-  </div>
-  <div class="overflow-auto">
-    <table class="w-full text-sm border">
-      <thead class="bg-amber-700 text-white">
-        <tr>
-          <th class="p-2 border">Nama</th>
-          <th class="p-2 border">NIK</th>
-          <th class="p-2 border">Komisariat</th>
-          <th class="p-2 border">Status</th>
-        </tr>
-      </thead>
-      <tbody id="tbody"></tbody>
-    </table>
-  </div>
+<!-- Tombol Tambah Data & Cetak -->
+<div class="flex gap-3 mb-6 no-print justify-center">
+  <button onclick="renderPrint()" class="bg-blue-600 text-white px-6 py-2 rounded">🔄 Refresh / Tambah Data</button>
+  <button onclick="downloadPDFA4()" class="bg-green-700 text-white px-6 py-2 rounded">🖨️ Cetak PDF A4</button>
 </div>
 
-<!-- CETAK -->
-<div id="cetak" class="tabPage hidden">
-<div class="no-print flex justify-center gap-3 mb-4">
-  <button onclick="downloadPDFA4()" class="bg-green-700 text-white px-6 py-2 rounded">🖨️ CETAK PDF A4</button>
-</div>
+<!-- Print Area -->
 <div id="printArea" class="flex flex-col gap-4"></div>
+
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 <script>
-// USER
-const USERS={ ekonomi:{pass:"12345",kom:"Komisariat Ekonomi"}, cabang:{pass:"12345",kom:"ALL"} };
-let role=""; let rows=[
-  // contoh data anggota: [id, nama, NIK, komisariat, status, foto Base64]
-  ["1","Prayoga Romin Saputra","123456789","Komisariat Ekonomi","Aktif","","data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHe..."]
-];
+// ===== CONFIG =====
+const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQuZEZBPmhPirNxmYQaupTMPbP1VkQ4rcLLQ_hhS1kt_0oA88_DUgdc3-4JD32zCtYTmG3qzZutyvzD/pub?gid=0&single=true&output=csv";
+const ttdBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFQAAAAoCAYAAABy3EIAAAABG0lEQVR4nO3XsQkAMAwAsP3/t4t0hZBhnHUFq0BybCX+2P5JtqQk2bNmyZNmzZsmTJkyZMmTBl/l9g2dYwGJfQ2S6eN+ADwHYW8CO1TffypfqCQ9l7F2yU9A1ZYR5l5FAe64QEo9kW+whocZfNE3Zg1g3s0t52/Z6g1oyXwWzltcHwlZ9L4I2G7AQze7zvQYpYHcd3ffZsY20D/gzZ5jhmv/YlBz6eJ1AC0AAAAASUVORK5CYII=";
 
-// LOGIN
+// ===== USER =====
+const USERS={ ekonomi:{pass:"12345",kom:"Komisariat Ekonomi"}, cabang:{pass:"12345",kom:"ALL"} };
+let role=""; let rows=[];
+
+// ===== LOGIN =====
 function login(){ 
   let u=user.value.trim(); let p=pass.value; 
   if(USERS[u] && USERS[u].pass===p){
@@ -122,59 +107,58 @@ function login(){
     loginBox.classList.add("hidden");
     app.classList.remove("hidden");
     roleText.innerText="Akses: "+role;
-    render(); renderPrint();
+    loadData();
   } else loginErr.classList.remove("hidden");
 }
 
-// FILTER
-function filterRows(){ return rows.filter(r=>role==="ALL"||r[3]===role); }
-
-// RENDER DATA TABLE
-function render(){
-  tbody.innerHTML=filterRows().map(r=>{
-    return `<tr>
-      <td class="border p-1">${r[1]}</td>
-      <td class="border p-1">${r[2]}</td>
-      <td class="border p-1">${r[3]}</td>
-      <td class="border p-1">${r[4]}</td>
-    </tr>`;
-  }).join("");
+// ===== LOAD DATA CSV =====
+async function loadData(){
+  let t = await fetch(sheetURL).then(r=>r.text());
+  let arr = t.split("\n").map(r=>r.split(","));
+  arr.shift(); // header
+  rows = arr.map(r=>({
+    id: r[0],
+    nama: r[1],
+    nik: r[2],
+    komisariat: r[3],
+    status: r[4],
+    foto: r[5] || "https://via.placeholder.com/72x92.png?text=Foto"
+  }));
+  renderPrint();
 }
 
-// GENERATE QR
+// ===== FILTER DATA =====
+function filterRows(){ return rows.filter(r=>role==="ALL"||r.komisariat===role); }
+
+// ===== GENERATE QR =====
 async function generateQR(data){
   return await QRCode.toDataURL(data,{width:80,margin:1});
 }
 
-// RENDER PRINT AREA
-const ttdBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFQAAAAoCAYAAABy3EIAAAABG0lEQVR4nO3XsQkAMAwAsP3/t4t0hZBhnHUFq0BybCX+2P5JtqQk2bNmyZNmzZsmTJkyZMmTBl/l9g2dYwGJfQ2S6eN+ADwHYW8CO1TffypfqCQ9l7F2yU9A1ZYR5l5FAe64QEo9kW+whocZfNE3Zg1g3s0t52/Z6g1oyXwWzltcHwlZ9L4I2G7AQze7zvQYpYHcd3ffZsY20D/gzZ5jhmv/YlBz6eJ1AC0AAAAASUVORK5CYII=";
-
+// ===== RENDER PRINT AREA =====
 async function renderPrint(){
   const printArea = document.getElementById("printArea");
   printArea.innerHTML="";
-  const d = filterRows();
   const now = new Date();
   const timestamp = now.toLocaleString();
 
-  for(const r of d){
-    const qrBase64 = await generateQR(r[0]);
-    const foto = r[5]||"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABG0lEQVR4nO3XsQkAMAwAsP3/t4t0hZBhnHUFq0BybCX+2P5JtqQk2bNmyZNmzZsmTJkyZMmTBl/l9g2dYwGJfQ2S6eN+ADwHYW8CO1TffypfqCQ9l7F2yU9A1ZYR5l5FAe64QEo9kW+whocZfNE3Zg1g3s0t52/Z6g1oyXwWzltcHwlZ9L4I2G7AQze7zvQYpYHcd3ffZsY20D/gzZ5jhmv/YlBz6eJ1AC0AAAAASUVORK5CYII=";
+  for(const r of filterRows()){
+    const qrBase64 = await generateQR(r.id);
 
     const card = document.createElement("div");
     card.className="kta-card";
-
     card.innerHTML=`
       <div class="kta-left"></div>
       <div class="kta-content">
         <div class="kta-photo">
-          <img class="foto" src="${foto}">
+          <img class="foto" src="${r.foto}">
           <img class="ttd" src="${ttdBase64}">
         </div>
         <div class="kta-info">
-          <h2>${r[1]}</h2>
-          <p>NIK: ${r[2]}</p>
-          <p>Komisariat: ${r[3]}</p>
-          <p>Status: ${r[4]}</p>
+          <h2>${r.nama}</h2>
+          <p>NIK: ${r.nik}</p>
+          <p>Komisariat: ${r.komisariat}</p>
+          <p>Status: ${r.status}</p>
         </div>
         <div class="kta-qr">
           <img src="${qrBase64}">
@@ -187,7 +171,7 @@ async function renderPrint(){
   }
 }
 
-// DOWNLOAD PDF A4
+// ===== DOWNLOAD PDF A4 =====
 async function downloadPDFA4(){
   const printArea = document.getElementById("printArea");
   const imgs = printArea.querySelectorAll("img");
@@ -202,12 +186,6 @@ async function downloadPDFA4(){
     html2canvas:{scale:2,useCORS:true,allowTaint:true},
     jsPDF:{unit:'in', format:'a4', orientation:'portrait'}
   }).from(printArea).save();
-}
-
-// TAB
-function showTab(id){
-  document.querySelectorAll(".tabPage").forEach(x=>x.classList.add("hidden"));
-  document.getElementById(id).classList.remove("hidden");
 }
 </script>
 </body>
