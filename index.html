@@ -33,9 +33,14 @@ body { font-family:'Poppins', sans-serif; margin:0; padding:0; background:#f0f0f
 </head>
 <body class="p-6">
 
-<div class="mb-4">
-  <button onclick="generateKTA()" class="bg-green-700 text-white px-6 py-2 rounded font-semibold">Cetak / Print KTA</button>
-  <button onclick="downloadPDF()" class="bg-blue-600 text-white px-6 py-2 rounded font-semibold">Download PDF Semua</button>
+<div class="mb-4 flex flex-col md:flex-row md:items-center md:gap-4">
+  <select id="komisariatFilter" class="px-4 py-2 border rounded" onchange="generateKTA()">
+    <option value="all">Semua Komisariat</option>
+  </select>
+  <div class="flex gap-2 mt-2 md:mt-0">
+    <button onclick="generateKTA()" class="bg-green-700 text-white px-6 py-2 rounded font-semibold">Cetak / Print KTA</button>
+    <button onclick="downloadPDF()" class="bg-blue-600 text-white px-6 py-2 rounded font-semibold">Download PDF Semua</button>
+  </div>
 </div>
 
 <div id="kta-container" class="grid grid-cols-2 gap-6"></div>
@@ -48,6 +53,7 @@ const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSaGF4w9j1HOTUJc
 const defaultTTD = 'https://raw.githubusercontent.com/prayogas221/KTAHMIMIMIKA/532122c56719c026efcea792e03b13f7ddc44127/ttd.png';
 
 let membersData = [];
+let komisariatList = [];
 
 // Ambil CSV & parse
 async function loadMembers(){
@@ -66,6 +72,16 @@ async function loadMembers(){
       ttd: cols[15] || defaultTTD
     };
   });
+
+  // Buat daftar komisariat unik
+  komisariatList = [...new Set(membersData.map(m => m.komisariat))].filter(k => k);
+  const select = document.getElementById('komisariatFilter');
+  komisariatList.forEach(k => {
+    const option = document.createElement('option');
+    option.value = k;
+    option.textContent = k;
+    select.appendChild(option);
+  });
 }
 
 // Generate QR Base64
@@ -79,7 +95,11 @@ async function generateKTA(){
   container.innerHTML = '';
   const now = new Date();
   const timestamp = now.toLocaleString();
-  for(const m of membersData){
+  const filter = document.getElementById('komisariatFilter').value;
+
+  const filteredMembers = filter === 'all' ? membersData : membersData.filter(m => m.komisariat === filter);
+
+  for(const m of filteredMembers){
     const qr = await generateQR(m.id);
     const card = document.createElement('div');
     card.className = 'kta-card';
