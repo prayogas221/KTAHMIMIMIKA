@@ -8,6 +8,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 
 <style>
 body{font-family:system-ui;background:#f1f5f9}
@@ -19,7 +20,7 @@ body{font-family:system-ui;background:#f1f5f9}
 .kta-card{
   height:auto; border-radius:1rem; display:flex; gap:1rem; padding:1rem; align-items:center; position:relative;
 }
-.ttd{width:80px; height:40px; margin-top:4px;}
+.ttd{width:80px; height:40px; margin-top:8px;} /* diperpendek margin agar dekat foto */
 .timestamp{font-size:8px; color:#ccc; margin-top:2px;}
 </style>
 </head>
@@ -51,7 +52,6 @@ body{font-family:system-ui;background:#f1f5f9}
 
 <!-- DATA -->
 <div id="data" class="tabPage bg-white p-5 rounded-xl shadow">
-
   <div class="flex justify-between mb-3 no-print">
     <input id="search" oninput="render()" placeholder="Cari nama / NIK" class="border p-2 rounded w-1/2">
     <button onclick="downloadCSV()" class="bg-blue-600 text-white px-4 rounded">Download CSV</button>
@@ -72,19 +72,15 @@ body{font-family:system-ui;background:#f1f5f9}
       <tbody id="tbody"></tbody>
     </table>
   </div>
-
 </div>
 
 <!-- CETAK -->
 <div id="cetak" class="tabPage hidden">
-
 <div class="no-print flex justify-center gap-3 mb-4">
   <button onclick="window.print()" class="bg-green-700 text-white px-6 py-2 rounded">🖨️ PRINT A4</button>
   <button onclick="downloadPDFAll()" class="bg-blue-600 text-white px-6 py-2 rounded">📄 DOWNLOAD PDF Semua</button>
 </div>
-
 <div id="printArea" class="grid grid-cols-2 gap-4"></div>
-
 </div>
 
 <!-- SCAN QR -->
@@ -151,55 +147,62 @@ function render(){
  let d=filterRows();
  tbody.innerHTML=d.map(r=>{
    let id=r[0];
-   let qr=`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${id}`;
    let fotoURL=r[14] || "https://via.placeholder.com/80x100.png?text=Foto";
+   let qrURL = `https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${id}`;
    return `<tr>
      <td class="border p-1"><img src="${fotoURL}" class="w-12 h-12 object-cover rounded"></td>
      <td class="border p-1">${r[4]}</td>
      <td class="border p-1">${r[3]}</td>
      <td class="border p-1">${r[13]}</td>
      <td class="border p-1">${r[10]}</td>
-     <td class="border p-1"><img src="${qr}"></td>
+     <td class="border p-1"><img src="${qrURL}"></td>
    </tr>`;
  }).join("");
+}
+
+// ===== GENERATE QR BASE64 =====
+async function generateQR(data){
+ return await QRCode.toDataURL(data,{width:120,margin:1});
 }
 
 // ===== CETAK KTA MODERN GEN Z =====
 const ttdURL = "https://raw.githubusercontent.com/prayogas221/KTAHMIMIMIKA/bc6dca93f67847406bc4bd06cef02f549cedfae4/ttd.png";
 
-function renderPrint(){
- let d=filterRows();
- let now=new Date();
- let timestamp=now.toLocaleString();
+async function renderPrint(){
+ let d = filterRows();
+ printArea.innerHTML="";
+ let now = new Date();
+ let timestamp = now.toLocaleString();
 
- printArea.innerHTML = d.map(r => {
-   let id = r[0];
-   let qr = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${id}`;
-   let fotoURL = r[14] || "https://via.placeholder.com/80x100.png?text=Foto";
+ for(const r of d){
+   let id=r[0];
+   let fotoURL=r[14] || "https://via.placeholder.com/80x100.png?text=Foto";
+   let qrBase64 = await generateQR(id);
 
-   return `
-<div class="kta-card p-4 flex gap-4 rounded-xl shadow-lg" style="background: linear-gradient(145deg, #0f3d1e, #050505); color:white; border:2px solid #0f3d1e;">
-  <div class="flex flex-col justify-center items-center">
-    <img src="${fotoURL}" class="w-24 h-28 object-cover rounded-xl border-2 border-white shadow-md">
+   let div=document.createElement("div");
+   div.className="kta-card p-4 flex gap-4 rounded-xl shadow-lg";
+   div.style="background: linear-gradient(145deg, #0f3d1e, #050505); color:white; border:2px solid #0f3d1e;";
+
+   div.innerHTML=`
+<div class="flex flex-col justify-center items-center">
+  <img src="${fotoURL}" class="w-24 h-28 object-cover rounded-xl border-2 border-white shadow-md">
+  <img src="${ttdURL}" class="ttd shadow-md mt-2">
+</div>
+<div class="flex-1 flex flex-col justify-between text-sm">
+  <div>
+    <h2 class="text-lg font-bold tracking-wide">${r[4]}</h2>
+    <p>NIK: <span class="font-mono">${r[3]}</span></p>
+    <p>Komisariat: ${r[13]}</p>
+    <p>Status: ${r[10]}</p>
   </div>
-  <div class="flex-1 flex flex-col justify-between text-sm">
-    <div>
-      <h2 class="text-lg font-bold tracking-wide">${r[4]}</h2>
-      <p>NIK: <span class="font-mono">${r[3]}</span></p>
-      <p>Komisariat: ${r[13]}</p>
-      <p>Status: ${r[10]}</p>
-    </div>
-    <div class="flex justify-between items-center mt-2">
-      <div class="flex flex-col items-center">
-        <img src="${qr}" class="w-24 h-24 border-2 border-white rounded-md">
-        <span class="text-[10px] mt-1">${id}</span>
-      </div>
-      <img src="${ttdURL}" class="ttd shadow-md">
-    </div>
-    <div class="timestamp text-[9px] mt-2">Dicetak: ${timestamp}</div>
+  <div class="flex flex-col items-center mt-2">
+    <img src="${qrBase64}" class="w-24 h-24 border-2 border-white rounded-md">
+    <span class="text-[10px] mt-1">${id}</span>
   </div>
+  <div class="timestamp text-[9px] mt-2">Dicetak: ${timestamp}</div>
 </div>`;
- }).join("");
+   printArea.appendChild(div);
+ }
 }
 
 // ===== DOWNLOAD CSV =====
@@ -215,13 +218,10 @@ function downloadCSV(){
 
 // ===== DOWNLOAD PDF =====
 function downloadPDFAll(){
- let element=document.createElement("div");
- element.innerHTML=printArea.innerHTML;
- html2pdf().from(element).set({margin:0.2, filename:'KTA_All.pdf', html2canvas:{scale:2}}).save();
+ html2pdf().from(printArea).set({margin:0.2, filename:'KTA_All.pdf', html2canvas:{scale:2}}).save();
 }
 
 let currentProfileHTML="";
-
 function downloadPDFSingle(){
  if(currentProfileHTML){
    let div=document.createElement("div");
@@ -271,34 +271,32 @@ function startQR(){
  }
 }
 
-function showProfile(id){
+async function showProfile(id){
  let r=rows.find(x=>x[0]===id);
  if(r){
-   let qr=`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${id}`;
+   let fotoURL=r[14] || "https://via.placeholder.com/80x100.png?text=Foto";
+   let qrBase64=await generateQR(id);
    let now=new Date();
    let timestamp=now.toLocaleString();
-   let fotoURL=r[14] || "https://via.placeholder.com/80x100.png?text=Foto";
    currentProfileHTML=`
 <div class="kta-card p-4 flex gap-4 rounded-xl shadow-lg" style="background: linear-gradient(145deg, #0f3d1e, #050505); color:white; border:2px solid #0f3d1e;">
-  <div class="flex flex-col justify-center items-center">
-    <img src="${fotoURL}" class="w-24 h-28 object-cover rounded-xl border-2 border-white shadow-md">
+<div class="flex flex-col justify-center items-center">
+  <img src="${fotoURL}" class="w-24 h-28 object-cover rounded-xl border-2 border-white shadow-md">
+  <img src="${ttdURL}" class="ttd shadow-md mt-2">
+</div>
+<div class="flex-1 flex flex-col justify-between text-sm">
+  <div>
+    <h2 class="text-lg font-bold tracking-wide">${r[4]}</h2>
+    <p>NIK: <span class="font-mono">${r[3]}</span></p>
+    <p>Komisariat: ${r[13]}</p>
+    <p>Status: ${r[10]}</p>
   </div>
-  <div class="flex-1 flex flex-col justify-between text-sm">
-    <div>
-      <h2 class="text-lg font-bold tracking-wide">${r[4]}</h2>
-      <p>NIK: <span class="font-mono">${r[3]}</span></p>
-      <p>Komisariat: ${r[13]}</p>
-      <p>Status: ${r[10]}</p>
-    </div>
-    <div class="flex justify-between items-center mt-2">
-      <div class="flex flex-col items-center">
-        <img src="${qr}" class="w-24 h-24 border-2 border-white rounded-md">
-        <span class="text-[10px] mt-1">${id}</span>
-      </div>
-      <img src="${ttdURL}" class="ttd shadow-md">
-    </div>
-    <div class="timestamp text-[9px] mt-2">Dicetak: ${timestamp}</div>
+  <div class="flex flex-col items-center mt-2">
+    <img src="${qrBase64}" class="w-24 h-24 border-2 border-white rounded-md">
+    <span class="text-[10px] mt-1">${id}</span>
   </div>
+  <div class="timestamp text-[9px] mt-2">Dicetak: ${timestamp}</div>
+</div>
 </div>`;
    profileCard.innerHTML=currentProfileHTML;
    profileCard.classList.remove("hidden");
@@ -315,4 +313,3 @@ document.querySelectorAll(".tabPage").forEach(tab=>{
 </script>
 </body>
 </html>
-
