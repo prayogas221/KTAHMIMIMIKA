@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Database & Cetak KTA HMI Mimika</title>
+<title>Cetak KTA HMI Mimika</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -32,7 +32,7 @@ body{font-family:system-ui;background:#f1f5f9}
 
 <!-- LOGIN -->
 <div id="loginBox" class="max-w-md mx-auto bg-white p-6 rounded-xl shadow">
-  <h2 class="text-2xl font-bold mb-4 text-center">Login Database HMI Mimika</h2>
+  <h2 class="text-2xl font-bold mb-4 text-center">Login CETAK KTA HMI Mimika</h2>
   <input id="user" placeholder="Username" class="border p-2 w-full mb-3 rounded">
   <input id="pass" type="password" placeholder="Password" class="border p-2 w-full mb-4 rounded">
   <button onclick="login()" class="bg-green-700 text-white w-full py-2 rounded">Masuk</button>
@@ -156,7 +156,6 @@ function render(){
  tbody.innerHTML=d.map(r=>{
    let id=r[0];
    let qr=`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${id}`;
-   // foto otomatis pakai link dari spreadsheet
    let fotoURL=r[14] || "https://via.placeholder.com/80x100.png?text=Foto";
    return `<tr>
      <td class="border p-1"><img src="${fotoURL}" class="w-12 h-12 object-cover rounded"></td>
@@ -170,8 +169,8 @@ function render(){
 }
 
 // ===== CETAK KTA =====
-const ttdURL="https://raw.githubusercontent.com/prayogas221/KTAHMIMIMIKA/ec0acdc3d5cedcc6fa369ba4e496f6037f704fa2/ttd.png";
-const stempelURL="https://raw.githubusercontent.com/prayogas221/KTAHMIMIMIKA/ec0acdc3d5cedcc6fa369ba4e496f6037f704fa2/stempel.png";
+const ttdURL = "https://raw.githubusercontent.com/prayogas221/KTAHMIMIMIKA/bc6dca93f67847406bc4bd06cef02f549cedfae4/ttd.png";
+const stempelURL = "https://raw.githubusercontent.com/prayogas221/KTAHMIMIMIKA/ec0acdc3d5cedcc6fa369ba4e496f6037f704fa2/stempel.png";
 
 function renderPrint(){
  let d=filterRows();
