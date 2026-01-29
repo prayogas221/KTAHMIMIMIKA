@@ -18,9 +18,11 @@ body{font-family:system-ui;background:#f1f5f9}
   .no-print{display:none}
 }
 .kta-card{
-  height:auto; border-radius:1rem; display:flex; gap:1rem; padding:1rem; align-items:center; position:relative;
+  height:auto; border-radius:1rem; display:flex; gap:1rem; padding:1rem; align-items:flex-start; position:relative;
+  background: linear-gradient(145deg, #0f3d1e, #050505); color:white; border:2px solid #0f3d1e;
 }
-.ttd{width:80px; height:40px; margin-top:8px;} /* diperpendek margin agar dekat foto */
+.kta-card img{display:block;}
+.ttd{width:80px; height:40px; margin-top:4px;}
 .timestamp{font-size:8px; color:#ccc; margin-top:2px;}
 </style>
 </head>
@@ -29,7 +31,7 @@ body{font-family:system-ui;background:#f1f5f9}
 
 <!-- LOGIN -->
 <div id="loginBox" class="max-w-md mx-auto bg-white p-6 rounded-xl shadow">
-  <h2 class="text-2xl font-bold mb-4 text-center">Login Cetak KTA HMI Mimika</h2>
+  <h2 class="text-2xl font-bold mb-4 text-center">Login CETAK KTA HMI Mimika</h2>
   <input id="user" placeholder="Username" class="border p-2 w-full mb-3 rounded">
   <input id="pass" type="password" placeholder="Password" class="border p-2 w-full mb-4 rounded">
   <button onclick="login()" class="bg-green-700 text-white w-full py-2 rounded">Masuk</button>
@@ -147,7 +149,8 @@ function render(){
  let d=filterRows();
  tbody.innerHTML=d.map(r=>{
    let id=r[0];
-   let fotoURL=r[14] || "https://via.placeholder.com/80x100.png?text=Foto";
+   // placeholder foto Base64
+   let fotoURL = r[14] || "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABG0lEQVR4nO3XsQkAMAwAsP3/t4t0hZBhnHUFq0BybCX+2P5JtqQk2bNmyZNmzZsmTJkyZMmTBl/l9g2dYwGJfQ2S6eN+ADwHYW8CO1TffypfqCQ9l7F2yU9A1ZYR5l5FAe64QEo9kW+whocZfNE3Zg1g3s0t52/Z6g1oyXwWzltcHwlZ9L4I2G7AQze7zvQYpYHcd3ffZsY20D/gzZ5jhmv/YlBz6eJ1AC0AAAAASUVORK5CYII=";
    let qrURL = `https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${id}`;
    return `<tr>
      <td class="border p-1"><img src="${fotoURL}" class="w-12 h-12 object-cover rounded"></td>
@@ -165,8 +168,8 @@ async function generateQR(data){
  return await QRCode.toDataURL(data,{width:120,margin:1});
 }
 
-// ===== CETAK KTA MODERN GEN Z =====
-const ttdURL = "https://raw.githubusercontent.com/prayogas221/KTAHMIMIMIKA/bc6dca93f67847406bc4bd06cef02f549cedfae4/ttd.png";
+// ===== CETAK KTA =====
+const ttdURL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFQAAAAoCAYAAABy3EIAAAABG0lEQVR4nO3XsQkAMAwAsP3/t4t0hZBhnHUFq0BybCX+2P5JtqQk2bNmyZNmzZsmTJkyZMmTBl/l9g2dYwGJfQ2S6eN+ADwHYW8CO1TffypfqCQ9l7F2yU9A1ZYR5l5FAe64QEo9kW+whocZfNE3Zg1g3s0t52/Z6g1oyXwWzltcHwlZ9L4I2G7AQze7zvQYpYHcd3ffZsY20D/gzZ5jhmv/YlBz6eJ1AC0AAAAASUVORK5CYII=";
 
 async function renderPrint(){
  let d = filterRows();
@@ -176,12 +179,11 @@ async function renderPrint(){
 
  for(const r of d){
    let id=r[0];
-   let fotoURL=r[14] || "https://via.placeholder.com/80x100.png?text=Foto";
+   let fotoURL=r[14] || "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABG0lEQVR4nO3XsQkAMAwAsP3/t4t0hZBhnHUFq0BybCX+2P5JtqQk2bNmyZNmzZsmTJkyZMmTBl/l9g2dYwGJfQ2S6eN+ADwHYW8CO1TffypfqCQ9l7F2yU9A1ZYR5l5FAe64QEo9kW+whocZfNE3Zg1g3s0t52/Z6g1oyXwWzltcHwlZ9L4I2G7AQze7zvQYpYHcd3ffZsY20D/gzZ5jhmv/YlBz6eJ1AC0AAAAASUVORK5CYII=";
    let qrBase64 = await generateQR(id);
 
    let div=document.createElement("div");
    div.className="kta-card p-4 flex gap-4 rounded-xl shadow-lg";
-   div.style="background: linear-gradient(145deg, #0f3d1e, #050505); color:white; border:2px solid #0f3d1e;";
 
    div.innerHTML=`
 <div class="flex flex-col justify-center items-center">
@@ -217,17 +219,19 @@ function downloadCSV(){
 }
 
 // ===== DOWNLOAD PDF =====
-function downloadPDFAll(){
- html2pdf().from(printArea).set({margin:0.2, filename:'KTA_All.pdf', html2canvas:{scale:2}}).save();
-}
+async function downloadPDFAll(){
+ const imgs = printArea.querySelectorAll("img");
+ await Promise.all(Array.from(imgs).map(img=>{
+   if(img.complete) return Promise.resolve();
+   return new Promise(res=>img.onload=res);
+ }));
 
-let currentProfileHTML="";
-function downloadPDFSingle(){
- if(currentProfileHTML){
-   let div=document.createElement("div");
-   div.innerHTML=currentProfileHTML;
-   html2pdf().from(div).set({margin:0.2, filename:'KTA_Single.pdf', html2canvas:{scale:2}}).save();
- }
+ html2pdf().set({
+   margin:0.2,
+   filename:'KTA_All.pdf',
+   html2canvas:{scale:2, useCORS:true, allowTaint:true},
+   jsPDF:{unit:'in', format:'a4', orientation:'portrait'}
+ }).from(printArea).save();
 }
 
 // ===== TAB =====
@@ -236,81 +240,6 @@ function showTab(id){
  document.getElementById(id).classList.remove("hidden");
  if(id==="scan") startQR();
 }
-
-// ===== QR SCAN =====
-let videoStream;
-function startQR(){
- const video=document.getElementById("qrVideo");
- const canvas=document.createElement("canvas");
- const ctx=canvas.getContext("2d");
- const scanResult=document.getElementById("scanResult");
- const profileCard=document.getElementById("profileCard");
- const downloadBtn=document.getElementById("downloadPDFBtn");
-
- navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}})
- .then(stream=>{
-   videoStream=stream;
-   video.srcObject=stream;
-   video.setAttribute("playsinline", true);
-   video.play();
-   requestAnimationFrame(tick);
- }).catch(e=>{scanResult.innerText="Tidak bisa akses kamera";});
-
- function tick(){
-   if(video.readyState===video.HAVE_ENOUGH_DATA){
-     canvas.width=video.videoWidth;
-     canvas.height=video.videoHeight;
-     ctx.drawImage(video,0,0,canvas.width,canvas.height);
-     let imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
-     let code=jsQR(imageData.data,canvas.width,canvas.height);
-     if(code){
-       scanResult.innerText="QR Terbaca: "+code.data;
-       showProfile(code.data);
-     } else requestAnimationFrame(tick);
-   } else requestAnimationFrame(tick);
- }
-}
-
-async function showProfile(id){
- let r=rows.find(x=>x[0]===id);
- if(r){
-   let fotoURL=r[14] || "https://via.placeholder.com/80x100.png?text=Foto";
-   let qrBase64=await generateQR(id);
-   let now=new Date();
-   let timestamp=now.toLocaleString();
-   currentProfileHTML=`
-<div class="kta-card p-4 flex gap-4 rounded-xl shadow-lg" style="background: linear-gradient(145deg, #0f3d1e, #050505); color:white; border:2px solid #0f3d1e;">
-<div class="flex flex-col justify-center items-center">
-  <img src="${fotoURL}" class="w-24 h-28 object-cover rounded-xl border-2 border-white shadow-md">
-  <img src="${ttdURL}" class="ttd shadow-md mt-2">
-</div>
-<div class="flex-1 flex flex-col justify-between text-sm">
-  <div>
-    <h2 class="text-lg font-bold tracking-wide">${r[4]}</h2>
-    <p>NIK: <span class="font-mono">${r[3]}</span></p>
-    <p>Komisariat: ${r[13]}</p>
-    <p>Status: ${r[10]}</p>
-  </div>
-  <div class="flex flex-col items-center mt-2">
-    <img src="${qrBase64}" class="w-24 h-24 border-2 border-white rounded-md">
-    <span class="text-[10px] mt-1">${id}</span>
-  </div>
-  <div class="timestamp text-[9px] mt-2">Dicetak: ${timestamp}</div>
-</div>
-</div>`;
-   profileCard.innerHTML=currentProfileHTML;
-   profileCard.classList.remove("hidden");
-   downloadBtn.classList.remove("hidden");
- }
-}
-
-// ===== STOP CAMERA saat keluar tab =====
-document.querySelectorAll(".tabPage").forEach(tab=>{
-  tab.addEventListener("transitionend",()=>{
-    if(tab.id!=="scan" && videoStream){videoStream.getTracks().forEach(t=>t.stop());}
-  })  
-});
 </script>
 </body>
 </html>
-
