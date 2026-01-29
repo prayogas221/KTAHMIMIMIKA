@@ -3,152 +3,272 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cetak KTA HMI Mimika</title>
+<title>Database & Cetak KTA HMI Mimika</title>
+
+<!-- Tailwind CSS -->
 <script src="https://cdn.tailwindcss.com"></script>
+<!-- html2pdf -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<!-- QR Code -->
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+
 <style>
-body{font-family:system-ui;background:#f1f5f9;}
-.hidden{display:none;}
-.no-print{display:none !important;}
-.kta-card{
-  display:flex;
-  flex-direction:row;
-  background:white;
-  border-radius:1rem;
-  border:1px solid #ccc;
-  overflow:hidden;
-  height:180px;
-  width:320px;
-  position:relative;
-  font-family:system-ui;
+body { font-family: system-ui; background: #f1f5f9; }
+.hidden { display: none; }
+@media print {
+  body { background: white; }
+  .no-print { display: none; }
 }
-.kta-left, .kta-right{
-  width:40px;
-  background:linear-gradient(to bottom, #0f3d1e, #050505);
+
+/* KTA Card Styling */
+.kta-card {
+  height: auto;
+  border-radius: 1rem;
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  position: relative;
+  background: white;
+  color: #111;
+  border: 2px solid #0f3d1e;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  overflow: hidden;
 }
-.kta-center{
-  flex:1;
-  display:flex;
-  flex-direction:row;
-  padding:10px;
+.kta-card::before,
+.kta-card::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  width: 15px;
+  height: 100%;
+  background: linear-gradient(to bottom, #00ff66, #004d00);
 }
-.kta-photo{
-  width:80px;
-  height:120px;
-  object-fit:cover;
-  border-radius:0.5rem;
-  border:1px solid #0f3d1e;
-}
-.kta-info{
-  flex:1;
-  margin-left:10px;
-  display:flex;
-  flex-direction:column;
-  justify-content:space-between;
-}
-.kta-info h2{font-weight:bold;font-size:16px;color:#0f3d1e;}
-.kta-info p{font-size:12px;color:#333;margin:1px 0;}
-.kta-qr{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-}
-.kta-qr img{width:60px;height:60px;}
-.kta-ttd{width:70px;height:35px;margin-top:5px;}
-.timestamp{font-size:8px;color:#555;margin-top:2px;text-align:right;}
+.kta-card::before { left: 0; border-top-left-radius: 1rem; border-bottom-left-radius: 1rem; }
+.kta-card::after { right: 0; border-top-right-radius: 1rem; border-bottom-right-radius: 1rem; }
+
+.kta-card img { display: block; }
+.foto-anggota { width: 90px; height: 110px; object-fit: cover; border-radius: 0.75rem; border: 2px solid #0f3d1e; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+.ttd { width: 80px; height: 40px; margin-top: 4px; }
+.qr-code { width: 70px; height: 70px; border: 2px solid #0f3d1e; border-radius: 0.5rem; margin-top: 4px; }
+.timestamp { font-size: 8px; color: #666; margin-top: 2px; text-align: right; }
+.info { display: flex; flex-direction: column; justify-content: space-between; flex:1; padding-left: 0.5rem; }
+.info h2 { font-size: 1.1rem; font-weight: bold; margin-bottom: 2px; }
+.info p { font-size: 0.8rem; margin: 1px 0; }
 </style>
 </head>
+
 <body class="p-4">
 
-<div class="flex justify-center gap-3 mb-4">
-  <button onclick="downloadPDFAll()" class="bg-green-700 text-white px-6 py-2 rounded">📄 DOWNLOAD PDF Semua</button>
+<!-- LOGIN -->
+<div id="loginBox" class="max-w-md mx-auto bg-white p-6 rounded-xl shadow">
+  <h2 class="text-2xl font-bold mb-4 text-center">Login Database HMI Mimika</h2>
+  <input id="user" placeholder="Username" class="border p-2 w-full mb-3 rounded">
+  <input id="pass" type="password" placeholder="Password" class="border p-2 w-full mb-4 rounded">
+  <button onclick="login()" class="bg-green-700 text-white w-full py-2 rounded">Masuk</button>
+  <p id="loginErr" class="text-red-600 mt-2 hidden text-center">Login salah</p>
 </div>
 
+<!-- APP -->
+<div id="app" class="hidden">
+
+<header class="bg-gradient-to-r from-green-800 to-yellow-500 text-white text-center p-5 rounded-3xl shadow mb-6">
+  <h1 class="text-3xl font-bold">DATABASE HMI MIMIKA</h1>
+  <p id="roleText" class="mt-1 text-sm"></p>
+</header>
+
+<div class="flex gap-3 mb-6 justify-center no-print">
+  <button onclick="showTab('data')" class="btn bg-gray-200 px-3 py-1 rounded">📋 Data</button>
+  <button onclick="showTab('cetak')" class="btn bg-gray-200 px-3 py-1 rounded">🖨️ Cetak KTA</button>
+  <button onclick="showTab('scan')" class="btn bg-gray-200 px-3 py-1 rounded">📷 Scan QR</button>
+</div>
+
+<!-- DATA -->
+<div id="data" class="tabPage bg-white p-5 rounded-xl shadow">
+  <div class="flex justify-between mb-3 no-print">
+    <input id="search" oninput="render()" placeholder="Cari nama / NIK" class="border p-2 rounded w-1/2">
+    <button onclick="downloadCSV()" class="bg-blue-600 text-white px-4 rounded">Download CSV</button>
+  </div>
+
+  <div class="overflow-auto">
+    <table class="w-full text-sm border">
+      <thead class="bg-amber-700 text-white">
+        <tr>
+          <th class="p-2 border">Foto</th>
+          <th class="p-2 border">Nama</th>
+          <th class="p-2 border">NIK</th>
+          <th class="p-2 border">Komisariat</th>
+          <th class="p-2 border">Status</th>
+          <th class="p-2 border">QR</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- CETAK -->
+<div id="cetak" class="tabPage hidden">
+<div class="no-print flex justify-center gap-3 mb-4">
+  <button onclick="window.print()" class="bg-green-700 text-white px-6 py-2 rounded">🖨️ PRINT A4</button>
+  <button onclick="downloadPDFAll()" class="bg-blue-600 text-white px-6 py-2 rounded">📄 DOWNLOAD PDF Semua</button>
+</div>
 <div id="printArea" class="grid grid-cols-2 gap-4"></div>
+</div>
+
+<!-- SCAN QR -->
+<div id="scan" class="tabPage hidden bg-white p-5 rounded-xl shadow">
+  <h2 class="text-xl font-bold mb-3">Scan QR Anggota</h2>
+  <video id="qrVideo" class="w-full rounded mb-3"></video>
+  <p id="scanResult" class="mt-2 text-gray-700"></p>
+  <div id="profileCard" class="hidden mt-3 rounded-xl flex gap-3 items-center"></div>
+  <button id="downloadPDFBtn" class="bg-blue-600 text-white px-4 py-2 rounded mt-2 hidden" onclick="downloadPDFSingle()">📄 DOWNLOAD PDF</button>
+</div>
+
+<footer class="text-center mt-8 text-gray-500 no-print">IT Nesacip 2025</footer>
+
+</div>
 
 <script>
-const sheetURL="https://docs.google.com/spreadsheets/d/e/2PACX-1vQuZEZBPmhPirNxmYQaupTMPbP1VkQ4rcLLQ_hhS1kt_0oA88_DUgdc3-4JD32zCtYTmG3qzZutyvzD/pub?gid=0&single=true&output=csv";
-const ttdURL="https://raw.githubusercontent.com/prayogas221/KTAHMIMIMIKA/main/ttd.png"; // harus public URL TTD
-let rows=[];
+// ===== USER =====
+const USERS={
+ ekonomi:{pass:"12345",kom:"Komisariat Ekonomi"},
+ insan:{pass:"12345",kom:"Komisariat Insan Cita"},
+ lafran:{pass:"12345",kom:"Komisariat Lafran Pane"},
+ cabang:{pass:"12345",kom:"ALL"}
+};
 
-// ===== LOAD DATA =====
+let role=""; let rows=[];
+
+// ===== SHEET =====
+const sheetURL="https://docs.google.com/spreadsheets/d/e/2PACX-1vSaGF4w9j1HOTUJcpdBltUZ4N2hkZIqUpD6tJ4OkKkuHaYkWObiKnloTYC0rK1at5UYA16GmPUm7BNa/pub?gid=0&single=true&output=csv";
+
+// ===== LOGIN =====
+function login(){
+ let u=user.value.trim(); let p=pass.value;
+ if(USERS[u] && USERS[u].pass===p){
+   role=USERS[u].kom;
+   loginBox.classList.add("hidden");
+   app.classList.remove("hidden");
+   roleText.innerText="Akses: "+role;
+   loadData();
+ } else loginErr.classList.remove("hidden");
+}
+
+// ===== LOAD =====
 async function loadData(){
-  let t = await fetch(sheetURL).then(r=>r.text());
-  let arr = t.split("\n").map(r=>r.split(","));
-  arr.shift(); // remove header
-  rows = arr;
-  renderPrint();
+ let t=await fetch(sheetURL).then(r=>r.text());
+ let arr=t.split("\n").map(r=>r.split(","));
+ arr.shift(); // header
+ rows=arr;
+ render();
+ renderPrint();
 }
 
-// ===== GENERATE QR =====
+// ===== FILTER =====
+function filterRows(){
+ let f=search?.value.toLowerCase()||"";
+ return rows.filter(r=>{
+   let komis=r[13];
+   if(role!=="ALL" && komis!==role) return false;
+   return r.join(" ").toLowerCase().includes(f);
+ });
+}
+
+// ===== RENDER TABLE =====
+function render(){
+ let d=filterRows();
+ tbody.innerHTML=d.map(r=>{
+   let id=r[0];
+   let fotoURL = r[14] || "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABG0lEQVR4nO3XsQkAMAwAsP3/t4t0hZBhnHUFq0BybCX+2P5JtqQk2bNmyZNmzZsmTJkyZMmTBl/l9g2dYwGJfQ2S6eN+ADwHYW8CO1TffypfqCQ9l7F2yU9A1ZYR5l5FAe64QEo9kW+whocZfNE3Zg1g3s0t52/Z6g1oyXwWzltcHwlZ9L4I2G7AQze7zvQYpYHcd3ffZsY20D/gzZ5jhmv/YlBz6eJ1AC0AAAAASUVORK5CYII=";
+   let qrURL = `https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${id}`;
+   return `<tr>
+     <td class="border p-1"><img src="${fotoURL}" class="w-12 h-12 object-cover rounded"></td>
+     <td class="border p-1">${r[4]}</td>
+     <td class="border p-1">${r[3]}</td>
+     <td class="border p-1">${r[13]}</td>
+     <td class="border p-1">${r[10]}</td>
+     <td class="border p-1"><img src="${qrURL}"></td>
+   </tr>`;
+ }).join("");
+}
+
+// ===== GENERATE QR BASE64 =====
 async function generateQR(data){
-  return await QRCode.toDataURL(data,{width:120,margin:1});
+ return await QRCode.toDataURL(data,{width:120,margin:1});
 }
 
-// ===== RENDER PRINT =====
-async function renderPrint(){
-  const printArea=document.getElementById("printArea");
-  printArea.innerHTML="";
-  const now=new Date();
-  const timestamp=now.toLocaleString();
+// ===== CETAK KTA =====
+const ttdURL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFQAAAAoCAYAAABy3EIAAAABG0lEQVR4nO3XsQkAMAwAsP3/t4t0hZBhnHUFq0BybCX+2P5JtqQk2bNmyZNmzZsmTJkyZMmTBl/l9g2dYwGJfQ2S6eN+ADwHYW8CO1TffypfqCQ9l7F2yU9A1ZYR5l5FAe64QEo9kW+whocZfNE3Zg1g3s0t52/Z6g1oyXwWzltcHwlZ9L4I2G7AQze7zvQYpYHcd3ffZsY20D/gzZ5jhmv/YlBz6eJ1AC0AAAAASUVORK5CYII=";
 
-  for(const r of rows){
-    let id=r[0];
-    let nama=r[4];
-    let nik=r[3];
-    let komisariat=r[13];
-    let status=r[10];
-    let fotoURL = r[14] || "https://via.placeholder.com/80x120.png?text=Foto";
+async function renderPrint(){
+  let d = filterRows();
+  printArea.innerHTML="";
+  let now = new Date();
+  let timestamp = now.toLocaleString();
+
+  for(const r of d){
+    let id = r[0];
+    let fotoURL = r[14] || "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABG0lEQVR4nO3XsQkAMAwAsP3/t4t0hZBhnHUFq0BybCX+2P5JtqQk2bNmyZNmzZsmTJkyZMmTBl/l9g2dYwGJfQ2S6eN+ADwHYW8CO1TffypfqCQ9l7F2yU9A1ZYR5l5FAe64QEo9kW+whocZfNE3Zg1g3s0t52/Z6g1oyXwWzltcHwlZ9L4I2G7AQze7zvQYpYHcd3ffZsY20D/gzZ5jhmv/YlBz6eJ1AC0AAAAASUVORK5CYII=";
     let qrBase64 = await generateQR(id);
 
-    let div=document.createElement("div");
-    div.className="kta-card";
+    let div = document.createElement("div");
+    div.className = "kta-card";
 
-    div.innerHTML=`
-      <div class="kta-left"></div>
-      <div class="kta-center">
-        <img class="kta-photo" src="${fotoURL}" />
-        <div class="kta-info">
-          <div>
-            <h2>${nama}</h2>
-            <p>NIK: ${nik}</p>
-            <p>Komisariat: ${komisariat}</p>
-            <p>Status: ${status}</p>
-          </div>
-          <div class="flex justify-between items-center">
-            <div class="kta-qr">
-              <img src="${qrBase64}" />
-              <span style="font-size:10px;">${id}</span>
-            </div>
-            <img src="${ttdURL}" class="kta-ttd" />
-          </div>
-          <div class="timestamp">Dicetak: ${timestamp}</div>
-        </div>
+    div.innerHTML = `
+      <div class="flex flex-col items-center">
+        <img src="${fotoURL}" class="foto-anggota">
+        <img src="${ttdURL}" class="ttd">
       </div>
-      <div class="kta-right"></div>
+      <div class="info">
+        <div>
+          <h2>${r[4]}</h2>
+          <p>NIK: <span class="font-mono">${r[3]}</span></p>
+          <p>Komisariat: ${r[13]}</p>
+          <p>Status: ${r[10]}</p>
+        </div>
+        <div class="flex justify-between items-center mt-2">
+          <img src="${qrBase64}" class="qr-code">
+          <span class="text-[9px]">${id}</span>
+        </div>
+        <div class="timestamp">Dicetak: ${timestamp}</div>
+      </div>
     `;
     printArea.appendChild(div);
   }
 }
 
-// ===== DOWNLOAD PDF =====
-async function downloadPDFAll(){
-  const imgs = document.querySelectorAll("img");
-  await Promise.all(Array.from(imgs).map(img=>{
-    if(img.complete) return Promise.resolve();
-    return new Promise(res=>img.onload=res);
-  }));
-
-  html2pdf().set({
-    margin:0.2,
-    filename:'KTA_All.pdf',
-    html2canvas:{scale:2,useCORS:true,allowTaint:true},
-    jsPDF:{unit:'in', format:'a4', orientation:'portrait'}
-  }).from(document.getElementById("printArea")).save();
+// ===== DOWNLOAD CSV =====
+function downloadCSV(){
+ let d=filterRows();
+ let csv=d.map(r=>r.join(",")).join("\n");
+ let blob=new Blob([csv],{type:"text/csv"});
+ let a=document.createElement("a");
+ a.href=URL.createObjectURL(blob);
+ a.download="HMI_MIMIKA.csv";
+ a.click();
 }
 
-loadData();
+// ===== DOWNLOAD PDF =====
+async function downloadPDFAll(){
+ const imgs = printArea.querySelectorAll("img");
+ await Promise.all(Array.from(imgs).map(img=>{
+   if(img.complete) return Promise.resolve();
+   return new Promise(res=>img.onload=res);
+ }));
+
+ html2pdf().set({
+   margin:0.2,
+   filename:'KTA_All.pdf',
+   html2canvas:{scale:2, useCORS:true, allowTaint:true},
+   jsPDF:{unit:'in', format:'a4', orientation:'portrait'}
+ }).from(printArea).save();
+}
+
+// ===== TAB =====
+function showTab(id){
+ document.querySelectorAll(".tabPage").forEach(x=>x.classList.add("hidden"));
+ document.getElementById(id).classList.remove("hidden");
+}
 </script>
 </body>
 </html>
