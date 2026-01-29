@@ -156,8 +156,10 @@ function render(){
  tbody.innerHTML=d.map(r=>{
    let id=r[0];
    let qr=`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${id}`;
+   // foto otomatis pakai link dari spreadsheet
+   let fotoURL=r[14] || "https://via.placeholder.com/80x100.png?text=Foto";
    return `<tr>
-     <td class="border p-1"><img src="${r[14]}" class="w-12 h-12 object-cover rounded"></td>
+     <td class="border p-1"><img src="${fotoURL}" class="w-12 h-12 object-cover rounded"></td>
      <td class="border p-1">${r[4]}</td>
      <td class="border p-1">${r[3]}</td>
      <td class="border p-1">${r[13]}</td>
@@ -168,6 +170,9 @@ function render(){
 }
 
 // ===== CETAK KTA =====
+const ttdURL="https://raw.githubusercontent.com/prayogas221/KTAHMIMIMIKA/ec0acdc3d5cedcc6fa369ba4e496f6037f704fa2/ttd.png";
+const stempelURL="https://raw.githubusercontent.com/prayogas221/KTAHMIMIMIKA/ec0acdc3d5cedcc6fa369ba4e496f6037f704fa2/stempel.png";
+
 function renderPrint(){
  let d=filterRows();
  let now=new Date();
@@ -175,9 +180,10 @@ function renderPrint(){
  printArea.innerHTML=d.map(r=>{
    let id=r[0];
    let qr=`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${id}`;
+   let fotoURL=r[14] || "https://via.placeholder.com/80x100.png?text=Foto";
    return `
 <div class="kta-card">
-  <img src="${r[14]}" class="w-20 h-24 object-cover rounded">
+  <img src="${fotoURL}" class="w-20 h-24 object-cover rounded">
   <div class="flex-1 text-xs">
     <b>${r[4]}</b><br>
     NIK: ${r[3]}<br>
@@ -188,9 +194,9 @@ function renderPrint(){
   <div class="text-center">
     <img src="${qr}" class="w-20 mx-auto">
     <div class="text-[9px]">${id}</div>
-    <img src="ttd.png" class="ttd">
+    <img src="${ttdURL}" class="ttd">
   </div>
-  <img src="stempel.png" class="stempel">
+  <img src="${stempelURL}" class="stempel">
 </div>`; 
  }).join("");
 }
@@ -270,9 +276,10 @@ function showProfile(id){
    let qr=`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${id}`;
    let now=new Date();
    let timestamp=now.toLocaleString();
+   let fotoURL=r[14] || "https://via.placeholder.com/80x100.png?text=Foto";
    currentProfileHTML=`
 <div class="kta-card">
-  <img src="${r[14]}" class="w-20 h-24 object-cover rounded">
+  <img src="${fotoURL}" class="w-20 h-24 object-cover rounded">
   <div class="flex-1 text-xs">
     <b>${r[4]}</b><br>
     NIK: ${r[3]}<br>
@@ -283,9 +290,9 @@ function showProfile(id){
   <div class="text-center">
     <img src="${qr}" class="w-20 mx-auto">
     <div class="text-[9px]">${id}</div>
-    <img src="ttd.png" class="ttd">
+    <img src="${ttdURL}" class="ttd">
   </div>
-  <img src="stempel.png" class="stempel">
+  <img src="${stempelURL}" class="stempel">
 </div>`;
    profileCard.innerHTML=currentProfileHTML;
    profileCard.classList.remove("hidden");
@@ -295,7 +302,7 @@ function showProfile(id){
 
 // ===== STOP CAMERA saat keluar tab =====
 document.querySelectorAll(".tabPage").forEach(tab=>{
-  tab.addEventListener("transitionend",()=>{if(tab.id!=="scan" && videoStream){videoStream.getTracks().forEach(t=>t.stop());}})
+  tab.addEventListener("transitionend",()=>{if(tab.id!=="scan" && videoStream){videoStream.getTracks().forEach(t=>t.stop());}})  
 });
 </script>
 </body>
