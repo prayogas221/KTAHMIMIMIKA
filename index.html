@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cetak KTA HMI Mimika</title>
+<title>Database & Cetak KTA HMI Mimika</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -17,14 +17,10 @@ body{font-family:system-ui;background:#f1f5f9}
   .no-print{display:none}
 }
 .kta-card{
-  height:220px; border-radius:1rem; border:1px solid #ccc; display:flex; gap:0.5rem; 
-  padding:0.5rem; background:white; align-items:center; position:relative;
-}
-.stempel{
-  position:absolute; top:2px; right:2px; width:50px; height:50px; opacity:0.5;
+  height:auto; border-radius:1rem; display:flex; gap:1rem; padding:1rem; align-items:center; position:relative;
 }
 .ttd{width:80px; height:40px; margin-top:4px;}
-.timestamp{font-size:8px; color:#555; margin-top:2px;}
+.timestamp{font-size:8px; color:#ccc; margin-top:2px;}
 </style>
 </head>
 
@@ -32,7 +28,7 @@ body{font-family:system-ui;background:#f1f5f9}
 
 <!-- LOGIN -->
 <div id="loginBox" class="max-w-md mx-auto bg-white p-6 rounded-xl shadow">
-  <h2 class="text-2xl font-bold mb-4 text-center">Login CETAK KTA HMI Mimika</h2>
+  <h2 class="text-2xl font-bold mb-4 text-center">Login Database HMI Mimika</h2>
   <input id="user" placeholder="Username" class="border p-2 w-full mb-3 rounded">
   <input id="pass" type="password" placeholder="Password" class="border p-2 w-full mb-4 rounded">
   <button onclick="login()" class="bg-green-700 text-white w-full py-2 rounded">Masuk</button>
@@ -96,7 +92,7 @@ body{font-family:system-ui;background:#f1f5f9}
   <h2 class="text-xl font-bold mb-3">Scan QR Anggota</h2>
   <video id="qrVideo" class="w-full rounded mb-3"></video>
   <p id="scanResult" class="mt-2 text-gray-700"></p>
-  <div id="profileCard" class="hidden mt-3 border p-3 rounded-xl flex gap-3 items-center"></div>
+  <div id="profileCard" class="hidden mt-3 rounded-xl flex gap-3 items-center"></div>
   <button id="downloadPDFBtn" class="bg-blue-600 text-white px-4 py-2 rounded mt-2 hidden" onclick="downloadPDFSingle()">📄 DOWNLOAD PDF</button>
 </div>
 
@@ -168,35 +164,41 @@ function render(){
  }).join("");
 }
 
-// ===== CETAK KTA =====
+// ===== CETAK KTA MODERN GEN Z =====
 const ttdURL = "https://raw.githubusercontent.com/prayogas221/KTAHMIMIMIKA/bc6dca93f67847406bc4bd06cef02f549cedfae4/ttd.png";
-const stempelURL = "https://raw.githubusercontent.com/prayogas221/KTAHMIMIMIKA/ec0acdc3d5cedcc6fa369ba4e496f6037f704fa2/stempel.png";
 
 function renderPrint(){
  let d=filterRows();
  let now=new Date();
  let timestamp=now.toLocaleString();
- printArea.innerHTML=d.map(r=>{
-   let id=r[0];
-   let qr=`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${id}`;
-   let fotoURL=r[14] || "https://via.placeholder.com/80x100.png?text=Foto";
+
+ printArea.innerHTML = d.map(r => {
+   let id = r[0];
+   let qr = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${id}`;
+   let fotoURL = r[14] || "https://via.placeholder.com/80x100.png?text=Foto";
+
    return `
-<div class="kta-card">
-  <img src="${fotoURL}" class="w-20 h-24 object-cover rounded">
-  <div class="flex-1 text-xs">
-    <b>${r[4]}</b><br>
-    NIK: ${r[3]}<br>
-    ${r[13]}<br>
-    Status: ${r[10]}<br>
-    <div class="timestamp">Dicetak: ${timestamp}</div>
+<div class="kta-card p-4 flex gap-4 rounded-xl shadow-lg" style="background: linear-gradient(145deg, #0f3d1e, #050505); color:white; border:2px solid #0f3d1e;">
+  <div class="flex flex-col justify-center items-center">
+    <img src="${fotoURL}" class="w-24 h-28 object-cover rounded-xl border-2 border-white shadow-md">
   </div>
-  <div class="text-center">
-    <img src="${qr}" class="w-20 mx-auto">
-    <div class="text-[9px]">${id}</div>
-    <img src="${ttdURL}" class="ttd">
+  <div class="flex-1 flex flex-col justify-between text-sm">
+    <div>
+      <h2 class="text-lg font-bold tracking-wide">${r[4]}</h2>
+      <p>NIK: <span class="font-mono">${r[3]}</span></p>
+      <p>Komisariat: ${r[13]}</p>
+      <p>Status: ${r[10]}</p>
+    </div>
+    <div class="flex justify-between items-center mt-2">
+      <div class="flex flex-col items-center">
+        <img src="${qr}" class="w-24 h-24 border-2 border-white rounded-md">
+        <span class="text-[10px] mt-1">${id}</span>
+      </div>
+      <img src="${ttdURL}" class="ttd shadow-md">
+    </div>
+    <div class="timestamp text-[9px] mt-2">Dicetak: ${timestamp}</div>
   </div>
-  <img src="${stempelURL}" class="stempel">
-</div>`; 
+</div>`;
  }).join("");
 }
 
@@ -277,31 +279,38 @@ function showProfile(id){
    let timestamp=now.toLocaleString();
    let fotoURL=r[14] || "https://via.placeholder.com/80x100.png?text=Foto";
    currentProfileHTML=`
-<div class="kta-card">
-  <img src="${fotoURL}" class="w-20 h-24 object-cover rounded">
-  <div class="flex-1 text-xs">
-    <b>${r[4]}</b><br>
-    NIK: ${r[3]}<br>
-    ${r[13]}<br>
-    Status: ${r[10]}<br>
-    <div class="timestamp">Dicetak: ${timestamp}</div>
+<div class="kta-card p-4 flex gap-4 rounded-xl shadow-lg" style="background: linear-gradient(145deg, #0f3d1e, #050505); color:white; border:2px solid #0f3d1e;">
+  <div class="flex flex-col justify-center items-center">
+    <img src="${fotoURL}" class="w-24 h-28 object-cover rounded-xl border-2 border-white shadow-md">
   </div>
-  <div class="text-center">
-    <img src="${qr}" class="w-20 mx-auto">
-    <div class="text-[9px]">${id}</div>
-    <img src="${ttdURL}" class="ttd">
+  <div class="flex-1 flex flex-col justify-between text-sm">
+    <div>
+      <h2 class="text-lg font-bold tracking-wide">${r[4]}</h2>
+      <p>NIK: <span class="font-mono">${r[3]}</span></p>
+      <p>Komisariat: ${r[13]}</p>
+      <p>Status: ${r[10]}</p>
+    </div>
+    <div class="flex justify-between items-center mt-2">
+      <div class="flex flex-col items-center">
+        <img src="${qr}" class="w-24 h-24 border-2 border-white rounded-md">
+        <span class="text-[10px] mt-1">${id}</span>
+      </div>
+      <img src="${ttdURL}" class="ttd shadow-md">
+    </div>
+    <div class="timestamp text-[9px] mt-2">Dicetak: ${timestamp}</div>
   </div>
-  <img src="${stempelURL}" class="stempel">
 </div>`;
    profileCard.innerHTML=currentProfileHTML;
    profileCard.classList.remove("hidden");
-   document.getElementById("downloadPDFBtn").classList.remove("hidden");
+   downloadBtn.classList.remove("hidden");
  }
 }
 
 // ===== STOP CAMERA saat keluar tab =====
 document.querySelectorAll(".tabPage").forEach(tab=>{
-  tab.addEventListener("transitionend",()=>{if(tab.id!=="scan" && videoStream){videoStream.getTracks().forEach(t=>t.stop());}})  
+  tab.addEventListener("transitionend",()=>{
+    if(tab.id!=="scan" && videoStream){videoStream.getTracks().forEach(t=>t.stop());}
+  })  
 });
 </script>
 </body>
