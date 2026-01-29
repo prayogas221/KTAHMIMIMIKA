@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KTA HMI Mimika - Full Access</title>
+<title>KTA HMI Mimika - Full Access Fix</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -11,8 +11,6 @@
 <style>
 body { font-family:'Poppins', sans-serif; margin:0; padding:0; background:#f0f0f0; }
 .hidden { display:none; }
-
-/* KTA Card */
 .kta-card { 
   background:white; 
   border:2px solid #2d5016; 
@@ -107,6 +105,7 @@ const defaultTTD = 'https://raw.githubusercontent.com/prayogas221/KTAHMIMIMIKA/5
 let membersData = [];
 let currentKomisariat = "";
 
+// LOAD MEMBERS
 async function loadMembers(){
   const res = await fetch(csvUrl);
   const text = await res.text();
@@ -117,9 +116,9 @@ async function loadMembers(){
       id: cols[0],
       nik: cols[3],
       nama: cols[4],
-      komisariat: cols[13],
+      komisariat: cols[13] || "Unknown",
       cabang: cols[12] || "Mimika",
-      status: cols[10],
+      status: cols[10] || "Aktif",
       foto: cols[14] || 'https://via.placeholder.com/100x120?text=Foto',
       ttd: cols[15] || defaultTTD
     };
@@ -146,8 +145,10 @@ function login(){
       select.disabled = true;
     } else {
       currentKomisariat = "all";
-      const komisariatSet = new Set(membersData.filter(m=>m.cabang===userCabang).map(m=>m.komisariat));
-      select.innerHTML = '<option value="all">Semua Komisariat</option>' + 
+      // Filter anggota cabang sesuai CSV
+      const membersInCabang = membersData.filter(m => m.cabang.toLowerCase() === userCabang.toLowerCase());
+      const komisariatSet = new Set(membersInCabang.map(m => m.komisariat));
+      select.innerHTML = '<option value="all">Semua Komisariat</option>' +
         Array.from(komisariatSet).map(k=>`<option value="${k}">${k}</option>`).join('');
       select.disabled = false;
     }
@@ -168,7 +169,7 @@ function logout(){
   document.getElementById('password').value = '';
 }
 
-// QR
+// GENERATE QR
 async function generateQR(text){
   return await QRCode.toDataURL(text,{width:100, margin:1});
 }
@@ -185,7 +186,7 @@ async function generateKTA(){
 
   if(currentKomisariat==="all"){
     if(filterValue==="all"){
-      filteredMembers = membersData.filter(m => m.cabang === users["Cabang Mimika"].cabang);
+      filteredMembers = membersData.filter(m => m.cabang.toLowerCase() === users["Cabang Mimika"].cabang.toLowerCase());
     } else {
       filteredMembers = membersData.filter(m => m.komisariat === filterValue);
     }
