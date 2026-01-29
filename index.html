@@ -6,6 +6,8 @@
 <title>Database & Cetak KTA HMI Mimika</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
 
 <style>
 body{font-family:system-ui;background:#f1f5f9}
@@ -14,6 +16,15 @@ body{font-family:system-ui;background:#f1f5f9}
   body{background:white}
   .no-print{display:none}
 }
+.kta-card{
+  height:220px; border-radius:1rem; border:1px solid #ccc; display:flex; gap:0.5rem; 
+  padding:0.5rem; background:white; align-items:center; position:relative;
+}
+.stempel{
+  position:absolute; top:2px; right:2px; width:50px; height:50px; opacity:0.5;
+}
+.ttd{width:80px; height:40px; margin-top:4px;}
+.timestamp{font-size:8px; color:#555; margin-top:2px;}
 </style>
 </head>
 
@@ -37,8 +48,9 @@ body{font-family:system-ui;background:#f1f5f9}
 </header>
 
 <div class="flex gap-3 mb-6 justify-center no-print">
-  <button onclick="showTab('data')" class="btn">📋 Data</button>
-  <button onclick="showTab('cetak')" class="btn">🖨️ Cetak KTA</button>
+  <button onclick="showTab('data')" class="btn bg-gray-200 px-3 py-1 rounded">📋 Data</button>
+  <button onclick="showTab('cetak')" class="btn bg-gray-200 px-3 py-1 rounded">🖨️ Cetak KTA</button>
+  <button onclick="showTab('scan')" class="btn bg-gray-200 px-3 py-1 rounded">📷 Scan QR</button>
 </div>
 
 <!-- DATA -->
@@ -70,14 +82,22 @@ body{font-family:system-ui;background:#f1f5f9}
 <!-- CETAK -->
 <div id="cetak" class="tabPage hidden">
 
-<div class="no-print text-center mb-4">
+<div class="no-print flex justify-center gap-3 mb-4">
   <button onclick="window.print()" class="bg-green-700 text-white px-6 py-2 rounded">🖨️ PRINT A4</button>
+  <button onclick="downloadPDFAll()" class="bg-blue-600 text-white px-6 py-2 rounded">📄 DOWNLOAD PDF Semua</button>
 </div>
 
-<div id="printArea" class="grid grid-cols-2 gap-4">
+<div id="printArea" class="grid grid-cols-2 gap-4"></div>
 
 </div>
 
+<!-- SCAN QR -->
+<div id="scan" class="tabPage hidden bg-white p-5 rounded-xl shadow">
+  <h2 class="text-xl font-bold mb-3">Scan QR Anggota</h2>
+  <video id="qrVideo" class="w-full rounded mb-3"></video>
+  <p id="scanResult" class="mt-2 text-gray-700"></p>
+  <div id="profileCard" class="hidden mt-3 border p-3 rounded-xl flex gap-3 items-center"></div>
+  <button id="downloadPDFBtn" class="bg-blue-600 text-white px-4 py-2 rounded mt-2 hidden" onclick="downloadPDFSingle()">📄 DOWNLOAD PDF</button>
 </div>
 
 <footer class="text-center mt-8 text-gray-500 no-print">IT Nesacip 2025</footer>
@@ -122,7 +142,7 @@ async function loadData(){
 
 // ===== FILTER =====
 function filterRows(){
- let f=search.value.toLowerCase();
+ let f=search?.value.toLowerCase()||"";
  return rows.filter(r=>{
    let komis=r[13];
    if(role!=="ALL" && komis!==role) return false;
@@ -134,7 +154,7 @@ function filterRows(){
 function render(){
  let d=filterRows();
  tbody.innerHTML=d.map(r=>{
-   let id=r[0]; // SUBMISSION ID
+   let id=r[0];
    let qr=`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${id}`;
    return `<tr>
      <td class="border p-1"><img src="${r[14]}" class="w-12 h-12 object-cover rounded"></td>
@@ -150,33 +170,32 @@ function render(){
 // ===== CETAK KTA =====
 function renderPrint(){
  let d=filterRows();
+ let now=new Date();
+ let timestamp=now.toLocaleString();
  printArea.innerHTML=d.map(r=>{
    let id=r[0];
    let qr=`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${id}`;
    return `
-<div class="border rounded-xl p-3 flex gap-3 items-center bg-white" style="height:220px">
+<div class="kta-card">
   <img src="${r[14]}" class="w-20 h-24 object-cover rounded">
   <div class="flex-1 text-xs">
     <b>${r[4]}</b><br>
     NIK: ${r[3]}<br>
     ${r[13]}<br>
-    Status: ${r[10]}
+    Status: ${r[10]}<br>
+    <div class="timestamp">Dicetak: ${timestamp}</div>
   </div>
   <div class="text-center">
     <img src="${qr}" class="w-20 mx-auto">
     <div class="text-[9px]">${id}</div>
+    <img src="ttd.png" class="ttd">
   </div>
-</div>`;
+  <img src="stempel.png" class="stempel">
+</div>`; 
  }).join("");
 }
 
-// ===== TAB =====
-function showTab(id){
- document.querySelectorAll(".tabPage").forEach(x=>x.classList.add("hidden"));
- document.getElementById(id).classList.remove("hidden");
-}
-
-// ===== DOWNLOAD =====
+// ===== DOWNLOAD CSV =====
 function downloadCSV(){
  let d=filterRows();
  let csv=d.map(r=>r.join(",")).join("\n");
@@ -186,6 +205,98 @@ function downloadCSV(){
  a.download="HMI_MIMIKA.csv";
  a.click();
 }
+
+// ===== DOWNLOAD PDF =====
+function downloadPDFAll(){
+ let element=document.createElement("div");
+ element.innerHTML=printArea.innerHTML;
+ html2pdf().from(element).set({margin:0.2, filename:'KTA_All.pdf', html2canvas:{scale:2}}).save();
+}
+
+let currentProfileHTML="";
+
+function downloadPDFSingle(){
+ if(currentProfileHTML){
+   let div=document.createElement("div");
+   div.innerHTML=currentProfileHTML;
+   html2pdf().from(div).set({margin:0.2, filename:'KTA_Single.pdf', html2canvas:{scale:2}}).save();
+ }
+}
+
+// ===== TAB =====
+function showTab(id){
+ document.querySelectorAll(".tabPage").forEach(x=>x.classList.add("hidden"));
+ document.getElementById(id).classList.remove("hidden");
+ if(id==="scan") startQR();
+}
+
+// ===== QR SCAN =====
+let videoStream;
+function startQR(){
+ const video=document.getElementById("qrVideo");
+ const canvas=document.createElement("canvas");
+ const ctx=canvas.getContext("2d");
+ const scanResult=document.getElementById("scanResult");
+ const profileCard=document.getElementById("profileCard");
+ const downloadBtn=document.getElementById("downloadPDFBtn");
+
+ navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}})
+ .then(stream=>{
+   videoStream=stream;
+   video.srcObject=stream;
+   video.setAttribute("playsinline", true);
+   video.play();
+   requestAnimationFrame(tick);
+ }).catch(e=>{scanResult.innerText="Tidak bisa akses kamera";});
+
+ function tick(){
+   if(video.readyState===video.HAVE_ENOUGH_DATA){
+     canvas.width=video.videoWidth;
+     canvas.height=video.videoHeight;
+     ctx.drawImage(video,0,0,canvas.width,canvas.height);
+     let imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
+     let code=jsQR(imageData.data,canvas.width,canvas.height);
+     if(code){
+       scanResult.innerText="QR Terbaca: "+code.data;
+       showProfile(code.data);
+     } else requestAnimationFrame(tick);
+   } else requestAnimationFrame(tick);
+ }
+}
+
+function showProfile(id){
+ let r=rows.find(x=>x[0]===id);
+ if(r){
+   let qr=`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${id}`;
+   let now=new Date();
+   let timestamp=now.toLocaleString();
+   currentProfileHTML=`
+<div class="kta-card">
+  <img src="${r[14]}" class="w-20 h-24 object-cover rounded">
+  <div class="flex-1 text-xs">
+    <b>${r[4]}</b><br>
+    NIK: ${r[3]}<br>
+    ${r[13]}<br>
+    Status: ${r[10]}<br>
+    <div class="timestamp">Dicetak: ${timestamp}</div>
+  </div>
+  <div class="text-center">
+    <img src="${qr}" class="w-20 mx-auto">
+    <div class="text-[9px]">${id}</div>
+    <img src="ttd.png" class="ttd">
+  </div>
+  <img src="stempel.png" class="stempel">
+</div>`;
+   profileCard.innerHTML=currentProfileHTML;
+   profileCard.classList.remove("hidden");
+   document.getElementById("downloadPDFBtn").classList.remove("hidden");
+ }
+}
+
+// ===== STOP CAMERA saat keluar tab =====
+document.querySelectorAll(".tabPage").forEach(tab=>{
+  tab.addEventListener("transitionend",()=>{if(tab.id!=="scan" && videoStream){videoStream.getTracks().forEach(t=>t.stop());}})
+});
 </script>
 </body>
 </html>
