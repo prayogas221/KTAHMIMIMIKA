@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KTA HMI Mimika - Full Access Fix</title>
+<title>KTA HMI Mimika - Full Cabang Access</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -92,10 +92,10 @@ body { font-family:'Poppins', sans-serif; margin:0; padding:0; background:#f0f0f
 <script>
 // USERS
 const users = {
-  "Komisariat Ekonomi": { password:"ekonomi123", type:"komisariat", cabang:"Mimika" },
-  "Komisariat Insan Cita": { password:"insancita123", type:"komisariat", cabang:"Mimika" },
-  "Komisariat Lafran Pane": { password:"lafran123", type:"komisariat", cabang:"Mimika" },
-  "Cabang Mimika": { password:"cabang123", type:"cabang", cabang:"Mimika" }
+  "Komisariat Ekonomi": { password:"ekonomi123", type:"komisariat" },
+  "Komisariat Insan Cita": { password:"insancita123", type:"komisariat" },
+  "Komisariat Lafran Pane": { password:"lafran123", type:"komisariat" },
+  "Cabang Mimika": { password:"cabang123", type:"cabang" }
 };
 
 // CSV
@@ -103,7 +103,7 @@ const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSaGF4w9j1HOTUJc
 const defaultTTD = 'https://raw.githubusercontent.com/prayogas221/KTAHMIMIMIKA/532122c56719c026efcea792e03b13f7ddc44127/ttd.png';
 
 let membersData = [];
-let currentKomisariat = "";
+let currentUser = "";
 
 // LOAD MEMBERS
 async function loadMembers(){
@@ -116,9 +116,9 @@ async function loadMembers(){
       id: cols[0],
       nik: cols[3],
       nama: cols[4],
-      komisariat: cols[13] || "Unknown",
-      cabang: cols[12] || "Mimika",
-      status: cols[10] || "Aktif",
+      komisariat: cols[13]?.trim() || "Unknown",
+      cabang: cols[12]?.trim() || "Mimika",
+      status: cols[10]?.trim() || "Aktif",
       foto: cols[14] || 'https://via.placeholder.com/100x120?text=Foto',
       ttd: cols[15] || defaultTTD
     };
@@ -132,22 +132,18 @@ function login(){
   const error = document.getElementById('login-error');
 
   if(users[u] && users[u].password === p){
-    const userType = users[u].type;
-    const userCabang = users[u].cabang;
+    currentUser = u;
     document.getElementById('login-form').classList.add('hidden');
     document.getElementById('kta-page').classList.remove('hidden');
 
     const select = document.getElementById('komisariatFilter');
 
-    if(userType==="komisariat"){
-      currentKomisariat = u;
-      select.innerHTML = `<option value="${currentKomisariat}">${currentKomisariat}</option>`;
+    if(users[u].type === "komisariat"){
+      select.innerHTML = `<option value="${u}">${u}</option>`;
       select.disabled = true;
-    } else {
-      currentKomisariat = "all";
-      // Filter anggota cabang sesuai CSV
-      const membersInCabang = membersData.filter(m => m.cabang.toLowerCase() === userCabang.toLowerCase());
-      const komisariatSet = new Set(membersInCabang.map(m => m.komisariat));
+    } else { // CABANG
+      // tampilkan semua komisariat yang ada di CSV
+      const komisariatSet = new Set(membersData.map(m => m.komisariat));
       select.innerHTML = '<option value="all">Semua Komisariat</option>' +
         Array.from(komisariatSet).map(k=>`<option value="${k}">${k}</option>`).join('');
       select.disabled = false;
@@ -162,7 +158,7 @@ function login(){
 
 // LOGOUT
 function logout(){
-  currentKomisariat = "";
+  currentUser = "";
   document.getElementById('kta-page').classList.add('hidden');
   document.getElementById('login-form').classList.remove('hidden');
   document.getElementById('username').value = '';
@@ -184,14 +180,16 @@ async function generateKTA(){
   const filterValue = document.getElementById('komisariatFilter').value;
   let filteredMembers;
 
-  if(currentKomisariat==="all"){
-    if(filterValue==="all"){
-      filteredMembers = membersData.filter(m => m.cabang.toLowerCase() === users["Cabang Mimika"].cabang.toLowerCase());
+  if(currentUser === "Cabang Mimika"){ 
+    // semua anggota
+    if(filterValue === "all"){
+      filteredMembers = membersData;
     } else {
       filteredMembers = membersData.filter(m => m.komisariat === filterValue);
     }
   } else {
-    filteredMembers = membersData.filter(m => m.komisariat === currentKomisariat);
+    // komisariat-only
+    filteredMembers = membersData.filter(m => m.komisariat === currentUser);
   }
 
   for(const m of filteredMembers){
@@ -233,7 +231,7 @@ async function downloadPDF(){
   }));
   html2pdf().set({
     margin:0.2,
-    filename:`KTA_${currentKomisariat}.pdf`,
+    filename:`KTA_${currentUser}.pdf`,
     html2canvas:{scale:2, useCORS:true, allowTaint:true},
     jsPDF:{unit:'in', format:'a4', orientation:'portrait'}
   }).from(container).save();
