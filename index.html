@@ -58,8 +58,9 @@ body { font-family:'Poppins', sans-serif; margin:0; padding:1cm; background:#f0f
 #login-error { color:red; font-size:0.85rem; text-align:center; }
 
 /* Filter & button KTA */
-#kta-controls { display:flex; flex-wrap:wrap; gap:0.5rem; margin-bottom:1rem; justify-content:center; }
+#kta-controls { display:flex; flex-wrap:wrap; gap:0.5rem; margin-bottom:1rem; justify-content:center; align-items:center; }
 #kta-controls select, #kta-controls button { padding:0.4rem 0.6rem; border-radius:0.25rem; border:1px solid #ccc; font-size:0.75rem; }
+#kta-controls select[multiple] { min-width:150px; height:6rem; }
 #kta-controls button { color:white; border:none; font-weight:600; }
 #kta-controls .print { background:#2d5016; }
 #kta-controls .pdf { background:#2563eb; }
@@ -85,10 +86,11 @@ body { font-family:'Poppins', sans-serif; margin:0; padding:1cm; background:#f0f
 <!-- KTA PAGE -->
 <div id="kta-page" class="hidden">
 <div id="kta-controls">
-<select id="komisariatFilter" disabled></select>
-<button onclick="generateKTA()" class="print">Generate KTA</button>
-<button onclick="downloadPDF()" class="pdf">Download PDF</button>
-<button onclick="logout()" class="logout">Logout</button>
+  <select id="komisariatFilter" disabled></select>
+  <select id="namaFilter" multiple></select>
+  <button onclick="generateKTA()" class="print">Generate KTA</button>
+  <button onclick="downloadPDF()" class="pdf">Download PDF</button>
+  <button onclick="logout()" class="logout">Logout</button>
 </div>
 <div id="kta-container"></div>
 </div>
@@ -143,18 +145,23 @@ function login(){
     document.getElementById('login-form').classList.add('hidden');
     document.getElementById('kta-page').classList.remove('hidden');
 
-    const select = document.getElementById('komisariatFilter');
+    const komisariatSelect = document.getElementById('komisariatFilter');
+    const namaSelect = document.getElementById('namaFilter');
 
     if(users[u].type === "komisariat"){
-      select.innerHTML = `<option value="${u}">${u}</option>`;
-      select.disabled = true;
+      komisariatSelect.innerHTML = `<option value="${u}">${u}</option>`;
+      komisariatSelect.disabled = true;
     } else { // CABANG
       const komisariatSet = new Set(membersData.map(m => m.komisariat));
-      select.innerHTML = '<option value="all">Semua Komisariat</option>' +
+      komisariatSelect.innerHTML = '<option value="all">Semua Komisariat</option>' +
         Array.from(komisariatSet).map(k=>`<option value="${k}">${k}</option>`).join('');
-      select.disabled = false;
+      komisariatSelect.disabled = false;
     }
 
+    // Update nama filter ketika komisariat berubah
+    komisariatSelect.onchange = () => loadNamaFilter(komisariatSelect.value);
+
+    loadNamaFilter(komisariatSelect.value);
     generateKTA();
     error.classList.add('hidden');
   } else {
@@ -171,6 +178,13 @@ function logout(){
   document.getElementById('password').value = '';
 }
 
+// LOAD NAMA FILTER
+function loadNamaFilter(komisariat){
+  const namaSelect = document.getElementById('namaFilter');
+  let filteredMembers = komisariat === "all" ? membersData : membersData.filter(m => m.komisariat === komisariat);
+  namaSelect.innerHTML = filteredMembers.map(m => `<option value="${m.nama}">${m.nama}</option>`).join('');
+}
+
 // GENERATE QR
 async function generateQR(text){
   return await QRCode.toDataURL(text,{width:100, margin:1});
@@ -180,13 +194,21 @@ async function generateQR(text){
 async function generateKTA(){
   const container = document.getElementById('kta-container');
   container.innerHTML = '';
-  const filterValue = document.getElementById('komisariatFilter').value;
+
+  const komisariatValue = document.getElementById('komisariatFilter').value;
+  const selectedNames = Array.from(document.getElementById('namaFilter').selectedOptions).map(o=>o.value);
+
   let filteredMembers;
 
-  if(currentUser === "Cabang Mimika"){ 
-    filteredMembers = filterValue === "all" ? membersData : membersData.filter(m => m.komisariat === filterValue);
+  if(currentUser === "Cabang Mimika"){
+    filteredMembers = komisariatValue === "all" ? membersData : membersData.filter(m => m.komisariat === komisariatValue);
   } else {
     filteredMembers = membersData.filter(m => m.komisariat === currentUser);
+  }
+
+  // Filter per nama jika ada yang dipilih
+  if(selectedNames.length > 0){
+    filteredMembers = filteredMembers.filter(m => selectedNames.includes(m.nama));
   }
 
   for(const m of filteredMembers){
