@@ -103,17 +103,18 @@ async function loadMembers(){
   const rows = text.split('\n').slice(1);
   membersData = rows.map(r=>{
     const cols = r.split(',');
+
     return {
-      id: cols[0],
-      nama: cols[1],
-      nik: cols[2],
-      komisariat: cols[3]?.trim() || "Unknown",
-      cabang: cols[4]?.trim() || "Mimika",
-      status: cols[5]?.trim() || "Aktif",
-      foto: cols[6] || 'https://via.placeholder.com/100x120?text=Foto',
-      ttd: cols[7] || defaultTTD,
-      kategori_jabatan: cols[8] || "Anggota Biasa",
-      posisi_spesifik: cols[9] || "-"
+      id: cols[1] || '-',                                // Submission ID
+      nik: cols[4] || '-',                               // NIK
+      nama: cols[5] || '-',                              // Nama Lengkap
+      status: cols[11]?.trim() || '-',                   // Status
+      kategori_jabatan: cols[13]?.trim() || "Anggota Biasa", // Kategori Jabatan
+      posisi_spesifik: cols[14]?.trim() || "-",          // Posisi Spesifik
+      cabang: cols[15]?.trim() || '-',                   // Perguruan Tinggi (PT)
+      komisariat: cols[16]?.trim() || '-',               // Komisariat
+      foto: cols[17] || 'https://via.placeholder.com/100x120?text=Foto', // Foto
+      ttd: defaultTTD
     };
   });
 }
@@ -196,6 +197,7 @@ async function generateKTA(){
             <p>Perguruan Tinggi (PT): ${m.cabang}</p>
             <p>Status: ${m.status}</p>
             <p>Jabatan: ${m.kategori_jabatan}</p>
+            <p>Posisi: ${m.posisi_spesifik}</p>
           </div>
           <div class="kta-ttd-qr">
             <img src="${m.ttd}" alt="TTD">
