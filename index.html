@@ -107,13 +107,13 @@ async function loadMembers(){
       id: cols[0],
       nik: cols[3],
       nama: cols[4],
+      status: cols[10],
       kategori_jabatan: cols[12],
       posisi_spesifik: cols[13],
       perguruan_tinggi: cols[14],
       komisariat: cols[15],
-      status: cols[10],
       foto: cols[16] || 'https://via.placeholder.com/100x120?text=Foto',
-      ttd: cols[17] || defaultTTD
+      ttd: defaultTTD
     };
   });
 }
@@ -196,7 +196,7 @@ async function generateKTA(){
             <p>Perguruan Tinggi (PT): ${m.perguruan_tinggi}</p>
             <p>Status: ${m.status}</p>
             <p>Jabatan: ${m.kategori_jabatan}</p>
-            <p>Posisi: ${m.posisi_spesifik}</p>
+            <p>Posisi Spesifik: ${m.posisi_spesifik}</p>
           </div>
           <div class="kta-ttd-qr">
             <img src="${m.ttd}" alt="TTD">
@@ -231,5 +231,6 @@ async function downloadPDF(){
 // INIT
 (async()=>{ await loadMembers(); })();
 </script>
+
 </body>
 </html>
