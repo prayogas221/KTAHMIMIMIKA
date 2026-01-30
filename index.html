@@ -149,11 +149,11 @@ async function loadMembers(){
       id: cols[0],
       nik: cols[3],
       nama: cols[4],
-      komisariat: cols[15]?.trim() || "Unknown",
-      cabang: cols[14]?.trim() || "Unknown",
+      komisariat: cols[14]?.trim() || "Unknown",
+      cabang: cols[15]?.trim() || "Unknown",
       status: cols[10]?.trim() || "Aktif",
-      kategori_jabatan: cols[12]?.trim() || "Anggota Biasa",
-      posisi_spesifik: cols[13]?.trim() || "-",
+      kategori_jabatan: cols[14]?.trim() || "Anggota Biasa",
+      posisi_spesifik: cols[16]?.trim() || "-",
       foto: cols[16] || 'https://via.placeholder.com/100x120?text=Foto',
       ttd: defaultTTD
     };
@@ -268,3 +268,4 @@ async function downloadPDF(){
 
 </body>
 </html>
+
