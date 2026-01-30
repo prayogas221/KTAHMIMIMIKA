@@ -23,28 +23,24 @@ body { font-family:'Poppins', sans-serif; margin:0; padding:1cm; background:#f0f
   flex-direction:row;
   align-items:center;
   font-size:0.65rem;
+  position:relative;
 }
 .kta-left img { width:40px; height:50px; border-radius:0.25rem; object-fit:cover; border:1px solid #2d5016;}
-.kta-right { flex:1; display:flex; flex-direction:column; justify-content:space-between; }
+.kta-right { flex:1; display:flex; flex-direction:column; justify-content:space-between; padding-left:0.2rem; }
 .kta-right h2 { font-size:0.75rem; font-weight:700; margin:0 0 1px 0; }
 .kta-right p { margin:1px 0; font-size:0.55rem; word-break:break-word; }
 .kta-ttd-qr { display:flex; justify-content:space-between; align-items:center; margin-top:2px; gap:0.2rem;}
 .kta-ttd-qr img { width:30px; height:15px; object-fit:contain; }
 .kta-qr img { width:25px; height:25px; }
+.kta-logo { position:absolute; top:0.2rem; right:0.2rem; width:25px; height:auto; }
 #kta-container { display:flex; flex-wrap:wrap; gap:0.5cm; }
-#logo-hmi { position:absolute; top:1cm; right:1cm; width:40px; height:auto; }
 @media print {
   body { background:white; padding:0.5cm; }
-  #kta-container { display:flex; flex-wrap:wrap; gap:0.5cm; }
   .kta-card { box-shadow:none; page-break-inside:avoid; }
-  #logo-hmi { position:absolute; top:0.5cm; right:0.5cm; width:40px; }
 }
 </style>
 </head>
 <body>
-
-<!-- Logo HMI -->
-<img id="logo-hmi" src="https://w7.pngwing.com/pngs/421/188/png-transparent-green-and-black-hmi-logo-against-blue-background-muslim-students-association-logo-universitas-islam-negeri-raden-intan-lampung-organization-chairman-hmi-muslim-students-association-logo-universitas.png" alt="Logo HMI">
 
 <!-- Container KTA -->
 <div id="kta-container"></div>
@@ -55,34 +51,41 @@ body { font-family:'Poppins', sans-serif; margin:0; padding:1cm; background:#f0f
 </div>
 
 <script>
-// Data Dummy (ganti CSV sesuai kebutuhan)
-const membersData = [
-  {
-    id:'KTA001',
-    nama:'Ahmad Fikri',
-    nik:'1234567890123456',
-    komisariat:'Komisariat Ekonomi',
-    cabang:'Politeknik Amamapare Timika',
-    status:'Aktif',
-    foto:'https://via.placeholder.com/100x120?text=Foto',
-    ttd:'https://raw.githubusercontent.com/prayogas221/KTAHMIMIMIKA/532122c56719c026efcea792e03b13f7ddc44127/ttd.png'
-  },
-  {
-    id:'KTA002',
-    nama:'Siti Rahma',
-    nik:'2345678901234567',
-    komisariat:'Komisariat Insan Cita',
-    cabang:'Universitas Cenderawasih',
-    status:'Aktif',
-    foto:'https://via.placeholder.com/100x120?text=Foto',
-    ttd:'https://raw.githubusercontent.com/prayogas221/KTAHMIMIMIKA/532122c56719c026efcea792e03b13f7ddc44127/ttd.png'
-  }
-];
+// URL Google Spreadsheet CSV
+const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSaGF4w9j1HOTUJcpdBltUZ4N2hkZIqUpD6tJ4OkKkuHaYkWObiKnloTYC0rK1at5UYA16GmPUm7BNa/pub?gid=0&single=true&output=csv';
 
+// Logo HMI default
+const logoHMI = 'https://w7.pngwing.com/pngs/421/188/png-transparent-green-and-black-hmi-logo-against-blue-background-muslim-students-association-logo-universitas-islam-negeri-raden-intan-lampung-organization-chairman-hmi-muslim-students-association-logo-universitas.png';
+const defaultTTD = 'https://raw.githubusercontent.com/prayogas221/KTAHMIMIMIKA/532122c56719c026efcea792e03b13f7ddc44127/ttd.png';
+
+let membersData = [];
+
+// Load CSV
+async function loadMembers(){
+  const res = await fetch(csvUrl);
+  const text = await res.text();
+  const rows = text.split('\n').slice(1); // skip header
+  membersData = rows.map(r=>{
+    const cols = r.split(',');
+    return {
+      id: cols[0],
+      nik: cols[3],
+      nama: cols[4],
+      komisariat: cols[13]?.trim() || "Unknown",
+      cabang: cols[12]?.trim() || "Unknown",
+      status: cols[10]?.trim() || "Aktif",
+      foto: cols[14] || 'https://via.placeholder.com/100x120?text=Foto',
+      ttd: cols[15] || defaultTTD
+    };
+  });
+}
+
+// Generate QR
 async function generateQR(text){
   return await QRCode.toDataURL(text,{width:100, margin:1});
 }
 
+// Generate KTA
 async function generateKTA(){
   const container = document.getElementById('kta-container');
   container.innerHTML = '';
@@ -91,6 +94,7 @@ async function generateKTA(){
     const card = document.createElement('div');
     card.className = 'kta-card';
     card.innerHTML = `
+      <img src="${logoHMI}" alt="Logo HMI" class="kta-logo">
       <div class="kta-left">
         <img src="${m.foto}" alt="Foto">
       </div>
@@ -114,6 +118,7 @@ async function generateKTA(){
   }
 }
 
+// Download PDF
 async function downloadPDF(){
   const container = document.getElementById('kta-container');
   await Promise.all(Array.from(container.querySelectorAll('img')).map(img=>{
@@ -129,7 +134,10 @@ async function downloadPDF(){
 }
 
 // Init
-generateKTA();
+(async()=>{
+  await loadMembers();
+  await generateKTA();
+})();
 </script>
 
 </body>
