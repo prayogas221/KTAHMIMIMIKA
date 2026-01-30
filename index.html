@@ -41,42 +41,17 @@ body { font-family:'Poppins', sans-serif; margin:0; padding:1cm; background:#f0f
   pointer-events:none;
 }
 
-.kta-left { flex-shrink:0; }
 .kta-left img { width:50px; height:60px; border-radius:0.25rem; object-fit:cover; border:1px solid #2d5016;}
 .kta-right { flex:1; display:flex; flex-direction:column; justify-content:space-between; padding-left:0.3rem; }
 .kta-right h2 { font-size:0.78rem; font-weight:700; margin:0 0 2px 0; }
 .kta-right p { margin:1px 0; font-size:0.58rem; word-break:break-word; }
 
-.kta-footer {
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  margin-top:auto;
-  gap:0.3rem;
-}
+/* QR & TTD di bawah card */
+.kta-footer { display:flex; justify-content:space-between; align-items:center; margin-top:0.2rem; gap:0.2rem; }
+.kta-footer img { height:30px; object-fit:contain; border:1px solid #ccc; border-radius:2px; }
+.kta-footer .kta-qr img { width:30px; height:30px; }
 
-.kta-ttd img {
-  width:50%;
-  height:30px;
-  object-fit:contain;
-  border:1px solid #ccc;
-  border-radius:2px;
-}
-
-.kta-qr {
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  width:45%;
-  font-size:0.55rem;
-}
-
-.kta-qr img {
-  width:35px;
-  height:35px;
-}
-
-.kta-logo { position:absolute; top:0.25rem; right:0.25rem; width:28px; height:auto; }
+.kta-logo { position:absolute; top:0.2rem; right:0.2rem; width:28px; height:auto; }
 
 /* LOGIN */
 #login-form { max-width:300px; margin:4rem auto; padding:2rem; background:white; border-radius:0.5rem; box-shadow:0 2px 8px rgba(0,0,0,0.15); }
@@ -133,7 +108,7 @@ const users = {
 // CSV
 const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRkxnLr5GK_w_WRktgY-SZZ2pjBHlDVSphEYLLSBLntg0IyQB3Z5178wjaES8-yMQV7ZcMTGym-VoZA/pub?gid=0&single=true&output=csv';
 const logoHMI = 'https://upload.wikimedia.org/wikipedia/commons/6/67/Lambang_HMI_%28Original%29.png';
-const defaultTTD = 'https://raw.githubusercontent.com/prayogas221/KTAHMIMIMIKA/532122c56719c026efcea792e03b13f7ddc44127/ttd.png';
+const defaultTTD = 'https://raw.githubusercontent.com/prayogas221/KTAHMIMIMIKA/main/ttd.png';
 
 let membersData = [];
 let currentUser = "";
@@ -149,11 +124,11 @@ async function loadMembers(){
       id: cols[0],
       nik: cols[3],
       nama: cols[4],
-      komisariat: cols[14]?.trim() || "Unknown",
-      cabang: cols[15]?.trim() || "Unknown",
-      status: cols[10]?.trim() || "Aktif",
-      kategori_jabatan: cols[14]?.trim() || "Anggota Biasa",
-      posisi_spesifik: cols[16]?.trim() || "-",
+      status: cols[10] || "Aktif",
+      kategori_jabatan: cols[12] || "-",
+      posisi_spesifik: cols[13] || "-",
+      perguruan_tinggi: cols[14] || "-",
+      komisariat: cols[15] || "-",
       foto: cols[16] || 'https://via.placeholder.com/100x120?text=Foto',
       ttd: defaultTTD
     };
@@ -223,21 +198,19 @@ async function generateKTA(){
     card.className = 'kta-card';
     card.innerHTML = `
       <img src="${logoHMI}" alt="Logo HMI" class="kta-logo">
-      <div class="kta-left">
-        <img src="${m.foto}" alt="Foto">
-      </div>
+      <div class="kta-left"><img src="${m.foto}" alt="Foto"></div>
       <div class="kta-right">
         <div>
           <h2>${m.nama}</h2>
           <p>NIK: ${m.nik}</p>
           <p>Komisariat: ${m.komisariat}</p>
-          <p>Perguruan Tinggi (PT): ${m.cabang}</p>
+          <p>Perguruan Tinggi (PT): ${m.perguruan_tinggi}</p>
           <p>Status: ${m.status}</p>
           <p>Jabatan: ${m.kategori_jabatan} - ${m.posisi_spesifik}</p>
         </div>
         <div class="kta-footer">
-          <div class="kta-ttd"><img src="${m.ttd}" alt="TTD"></div>
-          <div class="kta-qr"><img src="${qr}" alt="QR"><span>${m.id}</span></div>
+          <img src="${m.ttd}" alt="TTD">
+          <div class="kta-qr"><img src="${qr}" alt="QR"></div>
         </div>
       </div>
     `;
@@ -268,4 +241,3 @@ async function downloadPDF(){
 
 </body>
 </html>
-
