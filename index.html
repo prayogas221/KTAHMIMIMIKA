@@ -88,7 +88,7 @@ const users = {
 };
 
 // CSV & LOGO
-const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSaGF4w9j1HOTUJcpdBltUZ4N2hkZIqUpD6tJ4OkKkuHaYkWObiKnloTYC0rK1at5UYA16GmPUm7BNa/pub?gid=0&single=true&output=csv';
+const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRkxnLr5GK_w_WRktgY-SZZ2pjBHlDVSphEYLLSBLntg0IyQB3Z5178wjaES8-yMQV7ZcMTGym-VoZA/pub?gid=0&single=true&output=csv';
 const logoHMI = 'https://upload.wikimedia.org/wikipedia/commons/6/67/Lambang_HMI_%28Original%29.png';
 const defaultTTD = 'https://raw.githubusercontent.com/prayogas221/KTAHMIMIMIKA/main/ttd.png';
 const qrBaseUrl = 'https://sites.google.com/view/database-kader-hmi-cabang-pers/halaman-muka/profil-anggota?memberID=';
@@ -103,18 +103,17 @@ async function loadMembers(){
   const rows = text.split('\n').slice(1);
   membersData = rows.map(r=>{
     const cols = r.split(',');
-
     return {
-      id: cols[1] || '-',                                // Submission ID
-      nik: cols[4] || '-',                               // NIK
-      nama: cols[5] || '-',                              // Nama Lengkap
-      status: cols[11]?.trim() || '-',                   // Status
-      kategori_jabatan: cols[13]?.trim() || "Anggota Biasa", // Kategori Jabatan
-      posisi_spesifik: cols[14]?.trim() || "-",          // Posisi Spesifik
-      cabang: cols[15]?.trim() || '-',                   // Perguruan Tinggi (PT)
-      komisariat: cols[16]?.trim() || '-',               // Komisariat
-      foto: cols[17] || 'https://via.placeholder.com/100x120?text=Foto', // Foto
-      ttd: defaultTTD
+      id: cols[0],
+      nik: cols[3],
+      nama: cols[4],
+      kategori_jabatan: cols[12],
+      posisi_spesifik: cols[13],
+      perguruan_tinggi: cols[14],
+      komisariat: cols[15],
+      status: cols[10],
+      foto: cols[16] || 'https://via.placeholder.com/100x120?text=Foto',
+      ttd: cols[17] || defaultTTD
     };
   });
 }
@@ -194,7 +193,7 @@ async function generateKTA(){
             <h2>${m.nama}</h2>
             <p>NIK: ${m.nik}</p>
             <p>Komisariat: ${m.komisariat}</p>
-            <p>Perguruan Tinggi (PT): ${m.cabang}</p>
+            <p>Perguruan Tinggi (PT): ${m.perguruan_tinggi}</p>
             <p>Status: ${m.status}</p>
             <p>Jabatan: ${m.kategori_jabatan}</p>
             <p>Posisi: ${m.posisi_spesifik}</p>
