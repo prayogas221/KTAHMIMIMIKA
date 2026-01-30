@@ -41,13 +41,41 @@ body { font-family:'Poppins', sans-serif; margin:0; padding:1cm; background:#f0f
   pointer-events:none;
 }
 
+.kta-left { flex-shrink:0; }
 .kta-left img { width:50px; height:60px; border-radius:0.25rem; object-fit:cover; border:1px solid #2d5016;}
 .kta-right { flex:1; display:flex; flex-direction:column; justify-content:space-between; padding-left:0.3rem; }
 .kta-right h2 { font-size:0.78rem; font-weight:700; margin:0 0 2px 0; }
 .kta-right p { margin:1px 0; font-size:0.58rem; word-break:break-word; }
-.kta-ttd-qr { display:flex; justify-content:space-between; align-items:center; margin-top:2px; gap:0.2rem;}
-.kta-ttd-qr img { width:30px; height:15px; object-fit:contain; border:1px solid #ccc; border-radius:2px; }
-.kta-qr img { width:25px; height:25px; }
+
+.kta-footer {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-top:auto;
+  gap:0.3rem;
+}
+
+.kta-ttd img {
+  width:50%;
+  height:30px;
+  object-fit:contain;
+  border:1px solid #ccc;
+  border-radius:2px;
+}
+
+.kta-qr {
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  width:45%;
+  font-size:0.55rem;
+}
+
+.kta-qr img {
+  width:35px;
+  height:35px;
+}
+
 .kta-logo { position:absolute; top:0.25rem; right:0.25rem; width:28px; height:auto; }
 
 /* LOGIN */
@@ -103,7 +131,7 @@ const users = {
 };
 
 // CSV
-const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSaGF4w9j1HOTUJcpdBltUZ4N2hkZIqUpD6tJ4OkKkuHaYkWObiKnloTYC0rK1at5UYA16GmPUm7BNa/pub?gid=0&single=true&output=csv';
+const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRkxnLr5GK_w_WRktgY-SZZ2pjBHlDVSphEYLLSBLntg0IyQB3Z5178wjaES8-yMQV7ZcMTGym-VoZA/pub?gid=0&single=true&output=csv';
 const logoHMI = 'https://upload.wikimedia.org/wikipedia/commons/6/67/Lambang_HMI_%28Original%29.png';
 const defaultTTD = 'https://raw.githubusercontent.com/prayogas221/KTAHMIMIMIKA/532122c56719c026efcea792e03b13f7ddc44127/ttd.png';
 
@@ -121,11 +149,13 @@ async function loadMembers(){
       id: cols[0],
       nik: cols[3],
       nama: cols[4],
-      komisariat: cols[13]?.trim() || "Unknown",
-      cabang: cols[12]?.trim() || "Unknown",
+      komisariat: cols[15]?.trim() || "Unknown",
+      cabang: cols[14]?.trim() || "Unknown",
       status: cols[10]?.trim() || "Aktif",
-      foto: cols[14] || 'https://via.placeholder.com/100x120?text=Foto',
-      ttd: cols[15] || defaultTTD
+      kategori_jabatan: cols[12]?.trim() || "Anggota Biasa",
+      posisi_spesifik: cols[13]?.trim() || "-",
+      foto: cols[16] || 'https://via.placeholder.com/100x120?text=Foto',
+      ttd: defaultTTD
     };
   });
 }
@@ -203,12 +233,11 @@ async function generateKTA(){
           <p>Komisariat: ${m.komisariat}</p>
           <p>Perguruan Tinggi (PT): ${m.cabang}</p>
           <p>Status: ${m.status}</p>
+          <p>Jabatan: ${m.kategori_jabatan} - ${m.posisi_spesifik}</p>
         </div>
-        <div class="kta-ttd-qr">
-          <img src="${m.ttd}" alt="TTD">
-          <div class="kta-qr">
-            <img src="${qr}" alt="QR">
-          </div>
+        <div class="kta-footer">
+          <div class="kta-ttd"><img src="${m.ttd}" alt="TTD"></div>
+          <div class="kta-qr"><img src="${qr}" alt="QR"><span>${m.id}</span></div>
         </div>
       </div>
     `;
@@ -239,4 +268,3 @@ async function downloadPDF(){
 
 </body>
 </html>
-
